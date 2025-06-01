@@ -213,8 +213,9 @@ class XSearchEnhancer {
       
       await this.saveSpecialUsers();
       
-      // 更新所有相关按钮
+      // 更新所有相关按钮和徽章
       this.updateAllStarButtons(username);
+      this.updateAllBadges(username);
       
       // 更新面板中的用户列表
       if (this.panel) {
@@ -263,6 +264,22 @@ class XSearchEnhancer {
           profileButton.title = isSpecialUser ? '从特别关注中移除' : '添加到特别关注';
         }
       }
+    }
+  
+    // 更新所有相同用户的徽章
+    updateAllBadges(username) {
+      const isSpecialUser = this.specialUsers.some(user => user.username === username);
+      const badges = document.querySelectorAll('.x-search-enhancer-badge');
+      
+      badges.forEach(badge => {
+        const userLink = badge.parentElement.querySelector('a[role="link"]');
+        if (userLink && userLink.getAttribute('href') === `/${username}`) {
+          if (!isSpecialUser) {
+            // 移除徽章
+            badge.remove();
+          }
+        }
+      });
     }
   
     // 在用户主页添加特别关注按钮
@@ -394,69 +411,86 @@ class XSearchEnhancer {
         position: fixed;
         top: 20px;
         right: 20px;
-        width: 320px;
+        width: 360px;
         max-height: calc(100vh - 40px);
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 16px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 20px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(255, 255, 255, 0.3);
         z-index: 10000;
         overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-        animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+        animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
       `;
   
       panelContainer.innerHTML = `
-        <div style="padding: 24px;">
+        <div style="padding: 28px;">
           <!-- 头部 -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #1d1d1f;">X 搜索增强</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.5px;">X 搜索增强</h2>
             <button id="close-panel" style="
-              width: 28px; 
-              height: 28px; 
+              width: 32px; 
+              height: 32px; 
               border-radius: 50%; 
-              background: rgba(120, 120, 128, 0.16); 
+              background: rgba(120, 120, 128, 0.12); 
               border: none; 
               display: flex; 
               align-items: center; 
               justify-content: center; 
               cursor: pointer; 
-              font-size: 14px; 
+              font-size: 16px; 
               color: #8e8e93;
-              transition: all 0.2s ease;
+              transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+              font-weight: 300;
             ">×</button>
           </div>
   
           <!-- 搜索框 -->
-          <div style="margin-bottom: 24px;">
+          <div style="margin-bottom: 28px;">
             <div style="position: relative;">
+              <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #8e8e93; font-size: 16px; pointer-events: none; opacity: 0.7;">🔍</div>
               <input 
                 type="text" 
                 id="search-keywords" 
                 placeholder="搜索关键词..." 
                 style="
                   width: 100%; 
-                  padding: 12px 16px; 
-                  border: 1px solid rgba(120, 120, 128, 0.2); 
-                  border-radius: 10px; 
+                  padding: 16px 16px 16px 44px; 
+                  border: none; 
+                  border-radius: 12px; 
                   font-size: 16px; 
-                  background: rgba(118, 118, 128, 0.06);
+                  background: rgba(118, 118, 128, 0.08);
                   outline: none;
-                  transition: all 0.2s ease;
+                  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                  color: #1d1d1f;
+                  font-weight: 400;
                 "
               >
             </div>
           </div>
   
           <!-- 特别关注用户列表 -->
-          <div style="margin-bottom: 24px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #1d1d1f;">特别关注</h3>
+          <div style="margin-bottom: 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.3px;">特别关注</h3>
+              <div style="
+                background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+                color: white;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 8px;
+                letter-spacing: 0.2px;
+              ">${this.specialUsers.length}</div>
+            </div>
             <div id="special-users-container" style="
-              max-height: 200px; 
+              max-height: 240px; 
               overflow-y: auto; 
-              border-radius: 10px; 
+              border-radius: 14px; 
               background: rgba(118, 118, 128, 0.06);
+              border: 1px solid rgba(118, 118, 128, 0.08);
             ">
               <div id="special-users-list">
                 <!-- 用户列表将在这里动态生成 -->
@@ -467,18 +501,19 @@ class XSearchEnhancer {
           <!-- 搜索按钮 -->
           <button id="execute-search" style="
             width: 100%; 
-            padding: 12px; 
+            padding: 16px; 
             background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%); 
             color: white; 
             border: none; 
-            border-radius: 10px; 
+            border-radius: 12px; 
             font-size: 16px; 
             font-weight: 600; 
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
+            letter-spacing: 0.3px;
           ">
-            搜索
+            开始搜索
           </button>
         </div>
       `;
@@ -500,34 +535,42 @@ class XSearchEnhancer {
       // 关闭按钮悬停效果
       const closeBtn = document.getElementById('close-panel');
       closeBtn.addEventListener('mouseover', () => {
-        closeBtn.style.backgroundColor = 'rgba(120, 120, 128, 0.24)';
+        closeBtn.style.backgroundColor = 'rgba(120, 120, 128, 0.2)';
+        closeBtn.style.transform = 'scale(1.05)';
       });
       closeBtn.addEventListener('mouseout', () => {
-        closeBtn.style.backgroundColor = 'rgba(120, 120, 128, 0.16)';
+        closeBtn.style.backgroundColor = 'rgba(120, 120, 128, 0.12)';
+        closeBtn.style.transform = 'scale(1)';
       });
   
       // 搜索框焦点效果
       const searchInput = document.getElementById('search-keywords');
       searchInput.addEventListener('focus', () => {
-        searchInput.style.borderColor = '#007AFF';
-        searchInput.style.backgroundColor = 'white';
-        searchInput.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.1)';
+        searchInput.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        searchInput.style.boxShadow = '0 0 0 4px rgba(0, 122, 255, 0.08)';
+        searchInput.style.transform = 'scale(1.01)';
       });
       searchInput.addEventListener('blur', () => {
-        searchInput.style.borderColor = 'rgba(120, 120, 128, 0.2)';
-        searchInput.style.backgroundColor = 'rgba(118, 118, 128, 0.06)';
+        searchInput.style.backgroundColor = 'rgba(118, 118, 128, 0.08)';
         searchInput.style.boxShadow = 'none';
+        searchInput.style.transform = 'scale(1)';
       });
   
       // 搜索按钮悬停效果
       const searchBtn = document.getElementById('execute-search');
       searchBtn.addEventListener('mouseover', () => {
-        searchBtn.style.transform = 'translateY(-1px)';
-        searchBtn.style.boxShadow = '0 6px 16px rgba(0, 122, 255, 0.4)';
+        searchBtn.style.transform = 'translateY(-2px) scale(1.01)';
+        searchBtn.style.boxShadow = '0 12px 24px rgba(0, 122, 255, 0.35)';
       });
       searchBtn.addEventListener('mouseout', () => {
-        searchBtn.style.transform = 'translateY(0)';
-        searchBtn.style.boxShadow = '0 4px 12px rgba(0, 122, 255, 0.3)';
+        searchBtn.style.transform = 'translateY(0) scale(1)';
+        searchBtn.style.boxShadow = '0 8px 20px rgba(0, 122, 255, 0.25)';
+      });
+      searchBtn.addEventListener('mousedown', () => {
+        searchBtn.style.transform = 'translateY(0) scale(0.98)';
+      });
+      searchBtn.addEventListener('mouseup', () => {
+        searchBtn.style.transform = 'translateY(0) scale(1)';
       });
   
       // 执行搜索
@@ -560,44 +603,80 @@ class XSearchEnhancer {
       const userListContainer = document.getElementById('special-users-list');
       if (!userListContainer) return;
   
+      // 更新计数器
+      const counter = this.panel.querySelector('[style*="linear-gradient"]');
+      if (counter) {
+        counter.textContent = this.specialUsers.length;
+      }
+  
       if (this.specialUsers.length === 0) {
         userListContainer.innerHTML = `
-          <div style="padding: 16px; text-align: center; color: #8e8e93; font-size: 14px;">
-            暂无特别关注用户
+          <div style="
+            padding: 24px; 
+            text-align: center; 
+            color: #8e8e93; 
+            font-size: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+          ">
+            <div style="font-size: 24px; opacity: 0.5;">⭐</div>
+            <div>暂无特别关注用户</div>
+            <div style="font-size: 13px; opacity: 0.7;">点击推文中的 ☆ 添加用户</div>
           </div>
         `;
         return;
       }
   
-      userListContainer.innerHTML = this.specialUsers.map((user) => `
+      userListContainer.innerHTML = this.specialUsers.map((user, index) => `
         <div class="special-user-item" data-username="${user.username}" style="
           display: flex; 
           justify-content: space-between; 
           align-items: center; 
-          padding: 12px 16px; 
-          border-bottom: 1px solid rgba(120, 120, 128, 0.1);
+          padding: 16px 20px; 
+          ${index < this.specialUsers.length - 1 ? 'border-bottom: 1px solid rgba(120, 120, 128, 0.08);' : ''}
           cursor: pointer;
-          transition: background-color 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          position: relative;
         ">
-          <div style="flex: 1; min-width: 0;">
-            <div style="font-weight: 500; color: #1d1d1f; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${user.displayName}
+          <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;">
+            <div style="
+              width: 8px; 
+              height: 8px; 
+              background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); 
+              border-radius: 50%;
+              flex-shrink: 0;
+            "></div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="
+                font-weight: 500; 
+                color: #1d1d1f; 
+                font-size: 15px; 
+                margin-bottom: 2px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis;
+              ">
+                ${user.displayName}
+              </div>
+              <div style="color: #8e8e93; font-size: 13px;">@${user.username}</div>
             </div>
-            <div style="color: #8e8e93; font-size: 12px;">@${user.username}</div>
           </div>
           <button class="remove-user" data-username="${user.username}" style="
-            width: 24px; 
-            height: 24px; 
+            width: 28px; 
+            height: 28px; 
             border-radius: 50%; 
-            background: rgba(255, 59, 48, 0.1); 
+            background: rgba(255, 59, 48, 0.08); 
             border: none; 
             color: #FF3B30; 
             cursor: pointer; 
-            font-size: 12px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 300;
           ">×</button>
         </div>
       `).join('');
@@ -606,7 +685,7 @@ class XSearchEnhancer {
       userListContainer.querySelectorAll('.special-user-item').forEach(item => {
         item.addEventListener('mouseover', () => {
           if (!item.querySelector('.remove-user:hover')) {
-            item.style.backgroundColor = 'rgba(118, 118, 128, 0.1)';
+            item.style.backgroundColor = 'rgba(118, 118, 128, 0.06)';
           }
         });
         item.addEventListener('mouseout', () => {
@@ -624,11 +703,13 @@ class XSearchEnhancer {
       // 绑定移除按钮事件
       userListContainer.querySelectorAll('.remove-user').forEach(btn => {
         btn.addEventListener('mouseover', () => {
-          btn.style.backgroundColor = 'rgba(255, 59, 48, 0.2)';
+          btn.style.backgroundColor = 'rgba(255, 59, 48, 0.15)';
+          btn.style.transform = 'scale(1.05)';
           btn.parentElement.style.backgroundColor = 'transparent';
         });
         btn.addEventListener('mouseout', () => {
-          btn.style.backgroundColor = 'rgba(255, 59, 48, 0.1)';
+          btn.style.backgroundColor = 'rgba(255, 59, 48, 0.08)';
+          btn.style.transform = 'scale(1)';
         });
         
         btn.addEventListener('click', async (e) => {
@@ -638,6 +719,7 @@ class XSearchEnhancer {
           await this.saveSpecialUsers();
           this.updatePanelUserList();
           this.updateAllStarButtons(username);
+          this.updateAllBadges(username);
         });
       });
     }
@@ -650,8 +732,10 @@ class XSearchEnhancer {
         // 搜索框抖动效果
         const searchInput = document.getElementById('search-keywords');
         searchInput.style.animation = 'shake 0.5s ease-in-out';
+        searchInput.style.backgroundColor = 'rgba(255, 59, 48, 0.1)';
         setTimeout(() => {
           searchInput.style.animation = '';
+          searchInput.style.backgroundColor = 'rgba(118, 118, 128, 0.08)';
         }, 500);
         return;
       }
@@ -659,7 +743,14 @@ class XSearchEnhancer {
       const encodedQuery = encodeURIComponent(keywords);
       const searchUrl = `https://x.com/search?q=${encodedQuery}&src=typed_query`;
       
-      window.location.href = searchUrl;
+      // 添加搜索动画效果
+      const searchBtn = document.getElementById('execute-search');
+      searchBtn.innerHTML = '搜索中...';
+      searchBtn.style.opacity = '0.7';
+      
+      setTimeout(() => {
+        window.location.href = searchUrl;
+      }, 300);
     }
   
     // 移除面板
