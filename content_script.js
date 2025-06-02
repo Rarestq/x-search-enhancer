@@ -119,8 +119,33 @@ class XSearchEnhancer {
       this.panel = null;
       this.specialUsers = [];
       this.currentUsername = null;
-      this.isPanelGloballyOpenState = false;
-      this.init();
+      this.isPanelGloballyOpenState = false; // 本地缓存的插件面板打开状态
+      // this.init(); // init 将在 initializeExtension 中被调用
+    }
+
+    /**
+     * 设置并持久化面板的打开/关闭状态。
+     * @param {boolean} isOpen - 面板是否应该打开。
+     * @async
+     */
+    async setPanelOpenState(isOpen) {
+        this.isPanelGloballyOpenState = isOpen;
+        // console.log(`XSE: Setting panel state to: ${isOpen}`);
+
+        if (chrome.runtime && chrome.runtime.id) {
+            try {
+                await chrome.storage.local.set({ isPanelGloballyOpen: isOpen });
+                // console.log(`XSE: Panel persistence set to ${isOpen} in chrome.storage.local.`);
+            } catch (error) {
+                if (error.message && error.message.includes("Extension context invalidated")) {
+                    console.warn(`XSE: Failed to set panel persistence to ${isOpen}: Context invalidated.`);
+                } else {
+                    console.error(`XSE: Failed to set panel persistence to ${isOpen}:`, error);
+                }
+            }
+        } else {
+            console.warn(`XSE: Context invalidated before setting panel persistence to ${isOpen}.`);
+        }
     }
 
     async init() {
@@ -130,6 +155,7 @@ class XSearchEnhancer {
       if (chrome.runtime && chrome.runtime.id) {
         try {
           const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
+          // 从存储中读取初始状态并更新本地缓
           this.isPanelGloballyOpenState = !!result.isPanelGloballyOpen;
           if (result.isPanelGloballyOpen) {
             if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
@@ -149,7 +175,7 @@ class XSearchEnhancer {
 
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'togglePanel') {
-          this.togglePanel().then(() => {
+          this.togglePanel().then(() => { // togglePanel 现在会处理状态持久化
              sendResponse({status: "panel action processed"});
           }).catch(error => {
              console.error("XSE: Error toggling panel:", error);
@@ -215,25 +241,25 @@ class XSearchEnhancer {
             }
 
             if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
-                try {
-                  // 再次检查上下文
-                  if (chrome.runtime && chrome.runtime.id) {
-                      const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
-                      if (result.isPanelGloballyOpen) {
-                        if (!document.getElementById(DOM_SELECTORS.PANEL.ID)) {
-                          // console.log('XSE: Panel not in DOM after URL change, recreating...');
-                          this.createPanel();
-                        }
-                      }
-                  } else {
-                      // console.warn('XSE: Context invalidated before checking panel persistence on URL change.');
-                  }
-                } catch (error) {
-                  if (error.message && error.message.toLowerCase().includes('extension context invalidated')) {
-                    // console.warn('XSE: Caught error - Extension context invalidated during chrome.storage.local.get:', error.message);
-                  } else {
-                    // console.error('XSE: Error checking/recreating panel on URL change:', error);
-                  }
+                // 当URL变化时，如果isPanelGloballyOpenState为true，则尝试重新创建面板
+                // 注意：这里不需要再次读取chrome.storage，直接使用缓存的 this.isPanelGloballyOpenState
+                if (this.isPanelGloballyOpenState) {
+                    if (!document.getElementById(DOM_SELECTORS.PANEL.ID)) {
+                      // console.log('XSE: Panel not in DOM after URL change (state was true), recreating...');
+                      this.createPanel();
+                    }
+                } else {
+                    // 如果状态是false，但面板由于某种原因（例如，之前的错误）仍然存在，则移除它
+                    if (this.panel) {
+                        // console.log('XSE: Panel state is false, but panel exists on URL change. Removing.');
+                        this.removePanel(); // removePanel 不改变状态，仅移除DOM
+                    }
+                }
+              } else {
+                  // 如果导航到非X页面，并且面板存在，则移除面板 (但不改变持久化状态)
+                  if (this.panel) {
+                      // console.log('XSE: Navigated off X.com, removing panel visually.');
+                      this.removePanel();
                 }
             }
             const primaryColumn = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN, document, 5000);
@@ -459,46 +485,19 @@ class XSearchEnhancer {
     }
 
     async togglePanel() {
-        if (this.panel) {
-          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
-              try {
-                  await chrome.storage.local.set({ isPanelGloballyOpen: false });
-                  this.isPanelGloballyOpenState = false;
-                  // console.log('XSE: Panel persistence disabled by user (toggle).');
-              } catch (error) {
-                  if (error.message && error.message.includes("Extension context invalidated")) {
-                      console.warn('XSE: Failed to disable panel persistence (toggle panel): Context invalidated.');
-                  } else {
-                      console.error('XSE: Failed to disable panel persistence (toggle panel):', error);
-                  }
-              }
-          } else {
-              console.warn('XSE: Context invalidated before disabling panel persistence (toggle panel).');
-          }
-          this.removePanel();
-        } else {
-          this.createPanel(); // createPanel 内部不处理 isPanelGloballyOpen
-          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
-              try {
-                  await chrome.storage.local.set({ isPanelGloballyOpen: true });
-                  this.isPanelGloballyOpenState = true;
-                  // console.log('XSE: Panel persistence enabled.');
-              } catch (error) {
-                  if (error.message && error.message.includes("Extension context invalidated")) {
-                      console.warn('XSE: Failed to enable panel persistence: Context invalidated.');
-                  } else {
-                      console.error('XSE: Failed to enable panel persistence:', error);
-                  }
-              }
-          } else {
-              console.warn('XSE: Context invalidated before enabling panel persistence.');
-          }
+        if (this.panel) { // 如果面板存在，表示要关闭
+          await this.setPanelOpenState(false); // 更新状态为关闭
+          this.removePanel(); // 仅移除DOM
+        } else { // 面板不存在，表示要创建
+          this.createPanel(); // 创建面板DOM
+          await this.setPanelOpenState(true);  // 更新状态为打开
         }
-      }
+    }
 
     createPanel() {
       if (document.getElementById(DOM_SELECTORS.PANEL.ID)) {
         this.panel = document.getElementById(DOM_SELECTORS.PANEL.ID);
+        // 如果面板已存在，可能需要刷新其内容，但状态管理不在这里做
         this.updatePanelUserList();
         return;
       }
@@ -543,22 +542,8 @@ class XSearchEnhancer {
       const closeButton = this.panel.querySelector(DOM_SELECTORS.PANEL.CLOSE_BUTTON);
       if (closeButton) {
         closeButton.addEventListener('click', async () => {
-          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
-            try {
-                await chrome.storage.local.set({ isPanelGloballyOpen: false });
-                this.isPanelGloballyOpenState = false;
-                // console.log('XSE: Panel persistence disabled by user (panel close button).');
-            } catch (error) {
-                if (error.message && error.message.includes("Extension context invalidated")) {
-                    console.warn('XSE: Failed to disable panel persistence (panel close): Context invalidated.');
-                } else {
-                    console.error('XSE: Failed to disable panel persistence (panel close):', error);
-                }
-            }
-          } else {
-            console.warn('XSE: Context invalidated before disabling panel persistence (panel close button).');
-          }
-          this.removePanel();
+          await this.setPanelOpenState(false); // 更新状态为关闭
+          this.removePanel(); // 仅移除DOM
         });
       }
 
@@ -711,6 +696,7 @@ async function initializeExtension() {
         // 再次检查上下文，因为 await 可能会有延迟
         if (chrome.runtime && chrome.runtime.id) {
             const xSearchEnhancer = new XSearchEnhancer();
+            await xSearchEnhancer.init(); // 调用 init 方法
         } else {
             console.warn('XSE: Context invalidated just before XSearchEnhancer instantiation.');
         }
