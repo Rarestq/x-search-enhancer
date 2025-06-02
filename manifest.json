@@ -43,7 +43,7 @@
     },
     "web_accessible_resources": [
       {
-        "resources": ["panel.html", "panel.css", "panel.js"],
+        "resources": [],
         "matches": ["*://x.com/*", "*://twitter.com/*"]
       }
     ]
