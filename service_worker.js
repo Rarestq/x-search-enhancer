@@ -42,6 +42,14 @@ chrome.action.onClicked.addListener(async (tab) => {
         color: '#FF0000',
         tabId: tab.id
       });
+
+      // 20250602 新增：设置 isPanelGloballyOpen 为 false
+      try {
+        await chrome.storage.local.set({ isPanelGloballyOpen: false });
+        console.log('Panel persistence disabled: Not an X.com page.');
+      } catch (storageError) {
+        console.error('Failed to set panel persistence state:', storageError);
+      }
       
       // 3秒后清除徽章
       setTimeout(() => {
@@ -65,9 +73,13 @@ chrome.action.onClicked.addListener(async (tab) => {
   
   // 安装时初始化存储
   chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.get(['specialUsers'], (result) => {
+    chrome.storage.local.get(['specialUsers', 'isPanelGloballyOpen'], (result) => { // 20250602 新增读取 isPanelGloballyOpen
       if (!result.specialUsers) {
         chrome.storage.local.set({ specialUsers: [] });
+      }
+      // 20250602 新增：初始化 isPanelGloballyOpen，如果未定义则设为 false
+      if (typeof result.isPanelGloballyOpen === 'undefined') {
+        chrome.storage.local.set({ isPanelGloballyOpen: false });
       }
     });
   });

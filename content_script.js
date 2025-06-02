@@ -5,17 +5,40 @@ class XSearchEnhancer {
       this.panel = null;
       this.specialUsers = [];
       this.currentUsername = null;
+      // 20250602 新增：isPanelGloballyOpen 状态的本地副本，可选，但有助于减少频繁读取storage
+      this.isPanelGloballyOpenState = false; 
       this.init();
     }
   
     async init() {
       // 加载特别关注用户列表
       await this.loadSpecialUsers();
+
+      // 20250602 新增：检查并根据 isPanelGloballyOpen 状态显示面板
+      try {
+        const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
+        this.isPanelGloballyOpenState = !!result.isPanelGloballyOpen; // 更新本地副本
+        if (result.isPanelGloballyOpen) {
+          if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
+            this.createPanel(); // 如果已激活且在 X 页面，则创建面板
+          }
+        }
+      } catch (error) {
+        console.error('Error reading panel persistence state:', error);
+      }
       
       // 监听来自背景脚本的消息
+      // 确保异步操作完成后调用 sendResponse，并且返回 true 来表明是异步响应。
+      // 这是 Chrome 扩展消息传递的最佳实践，可以避免 "The message port closed before a response was received" 的错误。
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'togglePanel') {
-          this.togglePanel();
+          this.togglePanel().then(() => { // togglePanel 现在是 async
+             sendResponse({status: "panel action processed"});
+          }).catch(error => {
+             console.error("Error toggling panel:", error);
+             sendResponse({status: "error", message: error.toString()});
+          });
+          return true; // 关键：表示会异步发送响应
         }
       });
   
@@ -47,25 +70,92 @@ class XSearchEnhancer {
   
     // 监听 URL 变化
     observeUrlChange() {
-      let currentUrl = window.location.href;
-      
-      const observer = new MutationObserver(() => {
-        if (window.location.href !== currentUrl) {
-          currentUrl = window.location.href;
-          setTimeout(() => {
-            this.handlePageType();
-          }, 1000); // 等待页面加载
-        }
-      });
+        let currentUrl = window.location.href;
+        
+        const observer = new MutationObserver(async () => { // 将回调设为 async
+          if (window.location.href !== currentUrl) {
+            currentUrl = window.location.href;
+            // 使用 console.log 区分插件日志，例如添加一个统一前缀
+            console.log('XSE: URL changed to:', currentUrl);
+
+            // --- 新增：检查扩展上下文是否有效 ---
+            if (!chrome.runtime || !chrome.runtime.id) {
+              console.warn('XSE: Extension context invalidated. Observer will not proceed.');
+              // 在某些情况下，您可能希望在这里断开观察者：
+              // observer.disconnect();
+              return;
+            }
+            // --- 结束新增检查 ---
   
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-      
-      // 监听推文流更新
-      this.observeTweetStream();
-    }
+            // 检查是否仍在 X.com 或 twitter.com 页面
+            if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
+              try {
+                const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
+                console.log('XSE: Panel persistence status on URL change:', result.isPanelGloballyOpen); // 用于调试
+                console.log('[XSE: 本地存储]Panel persistence status on URL change:', this.isPanelGloballyOpenState); // 用于调试
+  
+                if (result.isPanelGloballyOpen) {
+                  // 检查面板是否还存在于 DOM 中
+                  if (!document.getElementById('x-search-enhancer-panel')) {
+                    console.log('XSE: Panel not in DOM after URL change, recreating...'); // 用于调试
+                    this.createPanel(); // 如果面板因SPA导航被移除，且标记为应打开，则重新创建
+                  } else {
+                    console.log('XSE: Panel still in DOM after URL change.'); // 用于调试
+                  }
+                }
+              } catch (error) {
+                // 更具体地捕获和处理 "context invalidated" 错误
+                if (error.message && error.message.toLowerCase().includes('extension context invalidated')) {
+                  console.warn('XSE: Caught error - Extension context invalidated during chrome.storage.local.get:', error.message);
+                } else {
+                  console.error('XSE: Error checking/recreating panel on URL change:', error);
+                }
+              }
+            }
+            // else: 如果导航到了非 X 页面，面板自然会消失，isPanelGloballyOpen 状态不变，
+            // 等待 service_worker 在下次图标点击非X页面时将其设为 false，或用户返回X页面时自动重开（如果之前是true）
+  
+            // 原有的 handlePageType 调用，可以保留用于处理页面特有的按钮等
+            // 延迟是为了确保页面内容（尤其是SPA切换后的内容）有足够时间加载
+            setTimeout(() => {
+              // --- 新增：在 setTimeout回调中也检查上下文 ---
+              if (!chrome.runtime || !chrome.runtime.id) {
+                console.warn('XSE: Extension context invalidated. Skipping handlePageType inside setTimeout.');
+                return;
+              }
+              // --- 结束新增检查 ---
+              this.handlePageType();
+            }, 2000); // 等待页面加载
+          }
+        });
+
+        // 确保 document.body 存在才开始观察
+        if (document.body) {
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        } else {
+          // 如果 document.body 还不存在 (理论上 "run_at": "document_end" 时应该存在)
+          // 可以等待 DOMContentLoaded
+          document.addEventListener('DOMContentLoaded', () => {
+            if(document.body) { // 再次确认
+                observer.observe(document.body, {
+                  childList: true,
+                  subtree: true
+                });
+            }
+          });
+        }
+    
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+        
+        // 监听推文流更新 (这部分逻辑与面板持久化不直接相关，保持不变)
+        this.observeTweetStream();
+      }
   
     // 监听推文流的变化，实时添加徽章
     observeTweetStream() {
@@ -254,11 +344,24 @@ class XSearchEnhancer {
     }
   
     // 切换面板显示
-    togglePanel() {
-      if (this.panel) {
-        this.removePanel();
-      } else {
-        this.createPanel();
+    async togglePanel() {
+      if (this.panel) { // 如果面板存在，表示要关闭
+        try {
+            await chrome.storage.local.set({ isPanelGloballyOpen: false });
+            console.log('Panel persistence disabled by user (toggle).');
+          } catch (error) {
+            console.error('Failed to disable panel persistence (toggle):', error);
+          }
+        this.removePanel(); 
+      } else { // 面板不存在，表示要创建
+        this.createPanel(); // createPanel 内部不处理 isPanelGloballyOpen
+        try {
+            await chrome.storage.local.set({ isPanelGloballyOpen: true });
+            this.isPanelGloballyOpenState = true; // 更新本地副本
+            console.log('Panel persistence enabled.');
+          } catch (error) {
+            console.error('Failed to enable panel persistence:', error);
+          }
       }
     }
   
@@ -317,9 +420,19 @@ class XSearchEnhancer {
     // 绑定面板事件
     bindPanelEvents() {
       // 关闭按钮
-      document.getElementById('close-panel').addEventListener('click', () => {
-        this.removePanel();
-      });
+      if (document.getElementById('close-panel')) { // 确保元素存在
+        document.getElementById('close-panel').addEventListener('click', async () => {
+          // 20250602 新增：在关闭面板时，设置 isPanelGloballyOpen 为 false
+          try {
+            await chrome.storage.local.set({ isPanelGloballyOpen: false });
+            this.isPanelGloballyOpenState = false; // 更新本地副本
+            console.log('Panel persistence disabled by user (panel close button).');
+          } catch (error) {
+            console.error('Failed to disable panel persistence (panel close):', error);
+          }
+          this.removePanel(); // removePanel 不再需要单独设置 isPanelGloballyOpen
+        });
+      }
   
       // 执行搜索
       document.getElementById('execute-search').addEventListener('click', () => {
@@ -447,9 +560,25 @@ class XSearchEnhancer {
       }, 300);
     }
   
-    // 移除面板
+    // 移除面板：removePanel() 自身的核心职责是移除 DOM 元素和清理状态，isPanelGloballyOpen 的管理最好放在触发关闭动作的源头
     removePanel() {
       if (this.panel) {
+        // 20250602 新增：当通过 togglePanel (用户再次点击插件图标) 关闭时，也应设置 isPanelGloballyOpen = false
+        // 这一步现在由 togglePanel (如果 panel 存在则调用 removePanel) 处理
+        // 或者由面板内关闭按钮的事件处理程序处理
+        // 为了确保，如果调用 removePanel 意味着用户想要关闭它，我们可以在这里也设置：
+        (async () => {
+            try {
+                // 只有当 removePanel 是由用户显式操作（如 togglePanel 或内部关闭按钮）触发时，才应设置为 false
+                // 避免在页面卸载等自动移除时错误地改变用户意图
+                // 鉴于此，将 isPanelGloballyOpen 的设置放在调用 removePanel 的地方更精确
+                // 此处暂时不修改 isPanelGloballyOpen，依赖调用者
+            } catch (error) {
+                // console.error('Failed to update panel persistence on remove:', error);
+            }
+        })();
+
+
         this.panel.style.animation = 'slideOutPanel 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
         setTimeout(() => {
           if (this.panel) {
@@ -461,5 +590,11 @@ class XSearchEnhancer {
     }
   }
   
-  // 初始化插件
-  const xSearchEnhancer = new XSearchEnhancer();
+  // 更安全的实例化：
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const xSearchEnhancer = new XSearchEnhancer();
+    });
+  } else {
+    const xSearchEnhancer = new XSearchEnhancer();
+  }
