@@ -1,145 +1,261 @@
 // content_script.js - 主要内容脚本
 
+/**
+ * @file content_script.js
+ * @description X Search Enhancer 浏览器扩展的核心内容脚本。
+ * 负责在 X.com (Twitter) 页面上注入UI元素、处理用户交互、
+ * 管理特别关注用户列表，并执行增强的搜索功能。
+ *
+ * 本脚本的“模块1”更新引入了健壮的DOM交互层，包括：
+ * 1. DOM_SELECTORS: 集中管理DOM选择器。
+ * 2. findElementAdvanced: 一个高级的元素查找工具，
+ * 使用MutationObserver来更可靠地定位动态加载的元素。
+ *
+ * 针对用户反馈调整星标按钮的放置位置和大小。
+ */
+
+// -----------------------------------------------------------------------------
+// 模块1: 健壮的 DOM 交互层
+// -----------------------------------------------------------------------------
+
+/**
+ * @constant {object} DOM_SELECTORS
+ * @description 存储扩展中使用的所有DOM选择器，便于维护和更新。
+ * 选择器按其用途或相关页面区域进行组织。
+ */
+const DOM_SELECTORS = {
+    // X.com/Twitter 页面元素
+    TWEET_ARTICLE: 'article[data-testid="tweet"]',
+    TWEET_USER_NAME_LINK: '[data-testid="User-Name"] a[role="link"]',
+    TWEET_USER_NAME_CONTAINER: '[data-testid="User-Name"]',
+
+    PROFILE_PAGE: {
+        // 主要用于定位用户名和用户ID所在的行或其直接父容器
+        USER_NAME_LINE_CONTAINER: [ // 按顺序尝试
+            'div[data-testid="UserName"]', // X.com 用户名显示元素
+            // 如果上面那个选择器不够精确，或者按钮需要放在其父级
+            // 'div[data-testid="UserProfileHeader_Items"] h2[role="heading"]', // 另一个可能的父容器
+        ],
+        // 用于提取用户名的更具体的元素（如果USER_NAME_LINE_CONTAINER是容器）
+        USER_DISPLAY_NAME_IN_CONTAINER: 'span > span > span', // 假设在UserName容器内的结构
+        // 也可以添加一个选择器来定位用户句柄 (@username) 元素，如果需要并排显示
+        // USER_HANDLE_ELEMENT: 'div[data-testid="UserName"] + div span[dir="ltr"]',
+    },
+
+    MAIN_CONTENT_AREA: 'main[role="main"]',
+    PRIMARY_COLUMN: 'div[data-testid="primaryColumn"]',
+
+    PANEL: {
+        ID: 'x-search-enhancer-panel',
+        CLOSE_BUTTON: '#close-panel',
+        SEARCH_INPUT: '#search-keywords',
+        EXECUTE_SEARCH_BUTTON: '#execute-search',
+        SPECIAL_USERS_LIST_CONTAINER: '#special-users-list',
+        USER_COUNT_BADGE: '.user-count-badge',
+        EMPTY_STATE_CONTAINER: '#special-users-list .empty-state',
+        SPECIAL_USER_ITEM: '.special-user-item',
+        REMOVE_USER_BUTTON: '.remove-user',
+    }
+};
+
+/**
+ * 异步查找DOM中的元素，支持多个选择器和MutationObserver。
+ * @async
+ * @param {string|string[]} selectors - 单个CSS选择器字符串或CSS选择器字符串数组。
+ * 如果提供数组，将按顺序尝试直到找到元素。
+ * @param {Node} [baseElement=document] - 在此基础元素内搜索。默认为整个文档。
+ * @param {number} [timeout=7000] - 等待元素出现的超时时间（毫秒）。
+ * @returns {Promise<Element|null>} 返回一个Promise，解析为找到的DOM元素，如果在超时内未找到则解析为null。
+ */
+async function findElementAdvanced(selectors, baseElement = document, timeout = 7000) {
+    const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
+
+    for (const selector of selectorArray) {
+        try {
+            const element = baseElement.querySelector(selector);
+            if (element) {
+                return element;
+            }
+        } catch (e) {
+            console.warn(`XSE: Invalid selector "${selector}" during direct find:`, e);
+        }
+    }
+
+    return new Promise((resolve) => {
+        let observer;
+        const timer = setTimeout(() => {
+            if (observer) observer.disconnect();
+            resolve(null);
+        }, timeout);
+
+        observer = new MutationObserver((mutationsList, obs) => {
+            for (const selector of selectorArray) {
+                try {
+                    const element = baseElement.querySelector(selector);
+                    if (element) {
+                        clearTimeout(timer);
+                        obs.disconnect();
+                        resolve(element);
+                        return;
+                    }
+                } catch (e) {
+                    // console.warn(`XSE: Invalid selector "${selector}" in MutationObserver:`, e);
+                }
+            }
+        });
+
+        observer.observe(baseElement === document ? document.documentElement : baseElement, {
+            childList: true,
+            subtree: true
+        });
+    });
+}
+// -----------------------------------------------------------------------------
+// End of Module 1
+// -----------------------------------------------------------------------------
+
 class XSearchEnhancer {
     constructor() {
       this.panel = null;
       this.specialUsers = [];
       this.currentUsername = null;
-      // 20250602 新增：isPanelGloballyOpen 状态的本地副本，可选，但有助于减少频繁读取storage
-      this.isPanelGloballyOpenState = false; 
+      this.isPanelGloballyOpenState = false;
       this.init();
     }
-  
+
     async init() {
-      // 加载特别关注用户列表
       await this.loadSpecialUsers();
 
-      // 20250602 新增：检查并根据 isPanelGloballyOpen 状态显示面板
-      try {
-        const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
-        this.isPanelGloballyOpenState = !!result.isPanelGloballyOpen; // 更新本地副本
-        if (result.isPanelGloballyOpen) {
-          if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
-            this.createPanel(); // 如果已激活且在 X 页面，则创建面板
+      // 检查上下文有效性
+      if (chrome.runtime && chrome.runtime.id) {
+        try {
+          const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
+          this.isPanelGloballyOpenState = !!result.isPanelGloballyOpen;
+          if (result.isPanelGloballyOpen) {
+            if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
+              this.createPanel();
+            }
+          }
+        } catch (error) {
+          if (error.message && error.message.includes("Extension context invalidated")) {
+            console.warn('XSE: Context invalidated during initial panel state check.');
+          } else {
+            console.error('XSE: Error reading panel persistence state:', error);
           }
         }
-      } catch (error) {
-        console.error('Error reading panel persistence state:', error);
+      } else {
+        console.warn('XSE: Extension context invalidated at init.');
       }
-      
-      // 监听来自背景脚本的消息
-      // 确保异步操作完成后调用 sendResponse，并且返回 true 来表明是异步响应。
-      // 这是 Chrome 扩展消息传递的最佳实践，可以避免 "The message port closed before a response was received" 的错误。
+
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'togglePanel') {
-          this.togglePanel().then(() => { // togglePanel 现在是 async
+          this.togglePanel().then(() => {
              sendResponse({status: "panel action processed"});
           }).catch(error => {
-             console.error("Error toggling panel:", error);
+             console.error("XSE: Error toggling panel:", error);
              sendResponse({status: "error", message: error.toString()});
           });
-          return true; // 关键：表示会异步发送响应
+          return true;
         }
       });
-  
-      // 检查当前页面类型并执行相应操作
+
       this.handlePageType();
-      
-      // 监听 URL 变化（SPA 路由）
       this.observeUrlChange();
     }
-  
-    // 加载特别关注用户列表
-    async loadSpecialUsers() {
-      return new Promise((resolve) => {
-        chrome.storage.local.get(['specialUsers'], (result) => {
-          this.specialUsers = result.specialUsers || [];
-          resolve();
-        });
-      });
-    }
-  
-    // 保存特别关注用户列表
-    async saveSpecialUsers() {
-      return new Promise((resolve) => {
-        chrome.storage.local.set({ specialUsers: this.specialUsers }, () => {
-          resolve();
-        });
-      });
-    }
-  
-    // 监听 URL 变化
-    observeUrlChange() {
-        let currentUrl = window.location.href;
-        
-        const observer = new MutationObserver(async () => { // 将回调设为 async
-          if (window.location.href !== currentUrl) {
-            currentUrl = window.location.href;
-            // 使用 console.log 区分插件日志，例如添加一个统一前缀
-            console.log('XSE: URL changed to:', currentUrl);
 
-            // --- 新增：检查扩展上下文是否有效 ---
-            if (!chrome.runtime || !chrome.runtime.id) {
-              console.warn('XSE: Extension context invalidated. Observer will not proceed.');
-              // 在某些情况下，您可能希望在这里断开观察者：
-              // observer.disconnect();
-              return;
-            }
-            // --- 结束新增检查 ---
-  
-            // 检查是否仍在 X.com 或 twitter.com 页面
-            if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
-              try {
-                const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
-                console.log('XSE: Panel persistence status on URL change:', result.isPanelGloballyOpen); // 用于调试
-                console.log('[XSE: 本地存储]Panel persistence status on URL change:', this.isPanelGloballyOpenState); // 用于调试
-  
-                if (result.isPanelGloballyOpen) {
-                  // 检查面板是否还存在于 DOM 中
-                  if (!document.getElementById('x-search-enhancer-panel')) {
-                    console.log('XSE: Panel not in DOM after URL change, recreating...'); // 用于调试
-                    this.createPanel(); // 如果面板因SPA导航被移除，且标记为应打开，则重新创建
-                  } else {
-                    console.log('XSE: Panel still in DOM after URL change.'); // 用于调试
-                  }
-                }
-              } catch (error) {
-                // 更具体地捕获和处理 "context invalidated" 错误
-                if (error.message && error.message.toLowerCase().includes('extension context invalidated')) {
-                  console.warn('XSE: Caught error - Extension context invalidated during chrome.storage.local.get:', error.message);
+    async loadSpecialUsers() {
+        return new Promise((resolve) => {
+          // 检查上下文有效性
+          if (chrome.runtime && chrome.runtime.id) {
+              chrome.storage.local.get(['specialUsers'], (result) => {
+                if (chrome.runtime.lastError) {
+                  console.warn('XSE: Error loading special users (context likely invalidated):', chrome.runtime.lastError.message);
+                  this.specialUsers = []; // 发生错误时，使用空数组作为后备
                 } else {
-                  console.error('XSE: Error checking/recreating panel on URL change:', error);
+                  this.specialUsers = result.specialUsers || [];
                 }
-              }
-            }
-            // else: 如果导航到了非 X 页面，面板自然会消失，isPanelGloballyOpen 状态不变，
-            // 等待 service_worker 在下次图标点击非X页面时将其设为 false，或用户返回X页面时自动重开（如果之前是true）
-  
-            // 原有的 handlePageType 调用，可以保留用于处理页面特有的按钮等
-            // 延迟是为了确保页面内容（尤其是SPA切换后的内容）有足够时间加载
-            setTimeout(() => {
-              // --- 新增：在 setTimeout回调中也检查上下文 ---
-              if (!chrome.runtime || !chrome.runtime.id) {
-                console.warn('XSE: Extension context invalidated. Skipping handlePageType inside setTimeout.');
-                return;
-              }
-              // --- 结束新增检查 ---
-              this.handlePageType();
-            }, 2000); // 等待页面加载
+                resolve();
+              });
+          } else {
+              console.warn('XSE: Context invalidated before loading special users.');
+              this.specialUsers = [];
+              resolve();
           }
         });
+    }
 
-        // 确保 document.body 存在才开始观察
+    async saveSpecialUsers() {
+        return new Promise((resolve) => {
+          // 检查上下文有效性
+          if (chrome.runtime && chrome.runtime.id) {
+              chrome.storage.local.set({ specialUsers: this.specialUsers }, () => {
+                if (chrome.runtime.lastError) {
+                  console.warn('XSE: Error saving special users (context likely invalidated):', chrome.runtime.lastError.message);
+                }
+                resolve();
+              });
+          } else {
+              console.warn('XSE: Context invalidated before saving special users.');
+              resolve();
+          }
+        });
+    }
+
+    observeUrlChange() {
+        let currentUrl = window.location.href;
+
+        const observer = new MutationObserver(async () => {
+          if (window.location.href !== currentUrl) {
+            currentUrl = window.location.href;
+            console.log('XSE: URL changed to:', currentUrl);
+
+            if (!chrome.runtime || !chrome.runtime.id) {
+              console.warn('XSE: Extension context invalidated. Observer will not proceed.');
+              return;
+            }
+
+            if (window.location.href.includes('x.com') || window.location.href.includes('twitter.com')) {
+                try {
+                  // 再次检查上下文
+                  if (chrome.runtime && chrome.runtime.id) {
+                      const result = await chrome.storage.local.get(['isPanelGloballyOpen']);
+                      if (result.isPanelGloballyOpen) {
+                        if (!document.getElementById(DOM_SELECTORS.PANEL.ID)) {
+                          // console.log('XSE: Panel not in DOM after URL change, recreating...');
+                          this.createPanel();
+                        }
+                      }
+                  } else {
+                      // console.warn('XSE: Context invalidated before checking panel persistence on URL change.');
+                  }
+                } catch (error) {
+                  if (error.message && error.message.toLowerCase().includes('extension context invalidated')) {
+                    // console.warn('XSE: Caught error - Extension context invalidated during chrome.storage.local.get:', error.message);
+                  } else {
+                    // console.error('XSE: Error checking/recreating panel on URL change:', error);
+                  }
+                }
+            }
+            const primaryColumn = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN, document, 5000);
+            if (primaryColumn) {
+                if (!chrome.runtime || !chrome.runtime.id) {
+                    console.warn('XSE: Extension context invalidated. Skipping handlePageType inside URL observer.');
+                    return;
+                }
+                this.handlePageType();
+            } else {
+                console.warn("XSE: Primary column not found after URL change. Skipping handlePageType.");
+            }
+          }
+        });
         if (document.body) {
           observer.observe(document.body, {
             childList: true,
             subtree: true
           });
         } else {
-          // 如果 document.body 还不存在 (理论上 "run_at": "document_end" 时应该存在)
-          // 可以等待 DOMContentLoaded
           document.addEventListener('DOMContentLoaded', () => {
-            if(document.body) { // 再次确认
+            if(document.body) {
                 observer.observe(document.body, {
                   childList: true,
                   subtree: true
@@ -147,329 +263,331 @@ class XSearchEnhancer {
             }
           });
         }
-    
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-        
-        // 监听推文流更新 (这部分逻辑与面板持久化不直接相关，保持不变)
         this.observeTweetStream();
       }
-  
-    // 监听推文流的变化，实时添加徽章
-    observeTweetStream() {
-      const tweetObserver = new MutationObserver(() => {
-        this.addSearchResultsBadges();
-      });
-      
-      // 观察主要内容区域
-      const mainContent = document.querySelector('main[role="main"]') || document.body;
+
+    async observeTweetStream() {
+      const mainContent = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN, document, 10000);
+
       if (mainContent) {
+        const tweetObserver = new MutationObserver((mutations) => {
+            let addedNodes = false;
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    addedNodes = true;
+                    break;
+                }
+            }
+            if (addedNodes) {
+                this.addSearchResultsBadges();
+            }
+        });
+
         tweetObserver.observe(mainContent, {
           childList: true,
           subtree: true
         });
+      } else {
+        console.warn('XSE: Main content area for tweet stream not found after timeout. Badges might not be added.');
       }
     }
-  
-    // 根据页面类型执行相应操作
-    handlePageType() {
+
+    async handlePageType() {
       const url = window.location.href;
-      
+
       if (this.isUserProfilePage(url)) {
-        this.addUserProfileButton();
+        await this.addUserProfileButton();
       }
-      
-      // 为搜索结果添加徽章
-      setTimeout(() => {
-        this.addSearchResultsBadges();
-      }, 1000);
+
+      const primaryColumn = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN);
+      if (primaryColumn) {
+          this.addSearchResultsBadges();
+      }
     }
-  
-    // 检查是否为用户主页
+
     isUserProfilePage(url) {
       const userProfileRegex = /^https?:\/\/(x\.com|twitter\.com)\/([^\/\?#]+)(?:\/?)$/;
       const match = url.match(userProfileRegex);
-      
+
       if (match) {
         const username = match[2];
-        const excludedPaths = ['home', 'explore', 'notifications', 'messages', 'bookmarks', 'lists', 'profile', 'more', 'compose', 'search', 'settings', 'help', 'i', 'intent'];
-        
-        if (!excludedPaths.includes(username.toLowerCase())) {
+        const excludedPaths = ['home', 'explore', 'notifications', 'messages', 'bookmarks', 'lists', 'profile', 'more', 'compose', 'search', 'settings', 'help', 'i', 'intent', 'search-advanced', 'tos', 'privacy', 'jobs', 'about', 'status', 'verified-choose'];
+
+        if (!excludedPaths.includes(username.toLowerCase()) && !username.includes('/')) {
           this.currentUsername = username;
           return true;
         }
       }
-      
       return false;
     }
-  
-    // 检查是否为搜索结果页
+
     isSearchResultsPage(url) {
       return url.includes('/search?q=') || url.includes('/search?f=');
     }
-  
-    // 在用户主页添加特别关注按钮
-    addUserProfileButton() {
-      // 移除已存在的按钮
+
+    async addUserProfileButton() {
       const existingButton = document.querySelector('.x-search-enhancer-follow-btn');
       if (existingButton) {
         existingButton.remove();
       }
-  
-      // 查找用户名元素
-      const usernameSelectors = [
-        '[data-testid="UserName"]',
-        '[role="heading"][aria-level="2"]',
-        'h2[role="heading"]'
-      ];
-  
-      let usernameElement = null;
-      for (const selector of usernameSelectors) {
-        usernameElement = document.querySelector(selector);
-        if (usernameElement) break;
-      }
-  
-      if (usernameElement) {
-        this.createFollowButton(usernameElement);
+
+      // 尝试定位用户名所在的行或其直接父容器
+      // 关键: 确保这里的选择器是最新的，并且能匹配目标页面的DOM结构
+      // 例如: const userNameLineContainer = await findElementAdvanced(['div[data-testid="UserName"]', 'another-selector-if-needed'], document, 10000); // 增加超时并提供备选
+      const userNameLineContainer = await findElementAdvanced(DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER, document, 10000); // 增加超时到10秒
+
+      if (userNameLineContainer) {
+        console.log("XSE: Username line container found for profile button:", userNameLineContainer);
+        // 将按钮附加到这个容器，它通常是行内或宽度自适应的
+        this.createFollowButton(userNameLineContainer);
       } else {
-        setTimeout(() => {
-          this.addUserProfileButton();
-        }, 2000);
+        // 这个警告依然可能出现，如果选择器确实不匹配或元素未在10秒内加载
+        console.warn('XSE: Username line container not found on profile page after timeout. Follow button not added.');
       }
     }
-  
-    // 创建特别关注按钮（用户主页）
+
     createFollowButton(parentElement) {
+      if (!this.currentUsername) {
+        console.warn("XSE: currentUsername is not set. Cannot create follow button.");
+        return;
+      }
+      if (parentElement.querySelector('.x-search-enhancer-follow-btn')) {
+        console.log("XSE: Follow button already exists in parent. Skipping creation.");
+        return;
+      }
+
       const isSpecialUser = this.specialUsers.some(user => user.username === this.currentUsername);
-      
+
       const button = document.createElement('button');
       button.className = 'x-search-enhancer-follow-btn';
       button.innerHTML = isSpecialUser ? '⭐' : '☆';
       button.title = isSpecialUser ? '从特别关注中移除' : '添加到特别关注';
-  
+
       button.addEventListener('click', async (e) => {
         e.preventDefault();
-        e.stopPropagation();
-        
+        e.stopPropagation(); // 阻止事件冒泡到父元素，以防意外导航或操作
         await this.toggleSpecialUser(this.currentUsername, button);
       });
-  
+
+      // 将按钮附加到父元素的末尾
+      // parentElement 通常是包含用户名的那一行元素
       parentElement.appendChild(button);
+      console.log("XSE: Follow button created and appended to:", parentElement);
     }
-  
-    // 切换特别关注用户状态
-    async toggleSpecialUser(username, button) {
+
+    async toggleSpecialUser(username, buttonElement) {
       const existingUserIndex = this.specialUsers.findIndex(user => user.username === username);
-      
+
       if (existingUserIndex !== -1) {
-        // 移除
         this.specialUsers.splice(existingUserIndex, 1);
-        button.innerHTML = '☆';
-        button.title = '添加到特别关注';
+        if (buttonElement) {
+            buttonElement.innerHTML = '☆';
+            buttonElement.title = '添加到特别关注';
+        }
       } else {
-        // 添加 - 获取用户显示名
         const displayName = await this.getUserDisplayName(username);
         this.specialUsers.push({
           username: username,
           displayName: displayName || username
         });
-        button.innerHTML = '⭐';
-        button.title = '从特别关注中移除';
+        if (buttonElement) {
+            buttonElement.innerHTML = '⭐';
+            buttonElement.title = '从特别关注中移除';
+        }
       }
-      
+
       await this.saveSpecialUsers();
-      
-      // 更新面板中的用户列表
+
       if (this.panel) {
         this.updatePanelUserList();
       }
     }
-  
-    // 获取用户显示名
+
     async getUserDisplayName(username) {
-      try {
-        // 尝试从当前页面获取显示名
-        const userNameElements = document.querySelectorAll('[data-testid="User-Name"]');
-        for (const element of userNameElements) {
-          const link = element.querySelector('a[role="link"]');
-          if (link && link.getAttribute('href') === `/${username}`) {
-            const displayNameElement = element.querySelector('[dir="ltr"]');
-            if (displayNameElement) {
-              return displayNameElement.textContent.trim();
-            }
+      const userNameContainer = await findElementAdvanced(DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER[0]);
+      if (userNameContainer) {
+          // 尝试从容器内提取更精确的显示名
+          const displayNameElement = userNameContainer.querySelector(DOM_SELECTORS.PROFILE_PAGE.USER_DISPLAY_NAME_IN_CONTAINER);
+          if (displayNameElement) {
+              const nameText = displayNameElement.textContent?.trim();
+              if (nameText) return nameText;
           }
-        }
-        return username;
-      } catch (error) {
-        return username;
+          // 如果特定选择器找不到，回退到容器的文本内容
+          const containerText = userNameContainer.textContent?.split('\n')[0].trim(); // 取第一行并去除换行
+          if (containerText) return containerText;
       }
+      return username;
     }
-  
-    // 在搜索结果中添加徽章 - 只为特别关注用户添加
+
     addSearchResultsBadges() {
-      const tweets = document.querySelectorAll('[data-testid="tweet"]');
-      
+      const tweets = document.querySelectorAll(DOM_SELECTORS.TWEET_ARTICLE);
+
       tweets.forEach(tweet => {
         if (tweet.querySelector('.x-search-enhancer-badge')) {
           return;
         }
-  
-        const userLink = tweet.querySelector('[data-testid="User-Name"] a[role="link"]');
+        const userLink = tweet.querySelector(DOM_SELECTORS.TWEET_USER_NAME_LINK);
         if (!userLink) return;
-  
+
         const href = userLink.getAttribute('href');
         if (!href) return;
-  
-        const username = href.replace('/', '');
-        
+
+        const usernameMatch = href.match(/^\/([^\/\?#]+)/);
+        if (!usernameMatch || !usernameMatch[1]) return;
+        const username = usernameMatch[1];
+
         if (this.specialUsers.some(user => user.username === username)) {
           this.addBadgeToTweet(tweet, userLink);
         }
       });
     }
-  
-    // 为推文添加徽章
-    addBadgeToTweet(tweet, userLink) {
+
+    addBadgeToTweet(tweetArticle, userLinkElement) {
       const badge = document.createElement('span');
       badge.className = 'x-search-enhancer-badge';
       badge.innerHTML = '⭐';
       badge.title = '特别关注用户';
-  
-      const userNameContainer = userLink.closest('[data-testid="User-Name"]');
+
+      const userNameContainer = userLinkElement.closest(DOM_SELECTORS.TWEET_USER_NAME_CONTAINER);
       if (userNameContainer) {
-        userNameContainer.appendChild(badge);
+        if (!userNameContainer.querySelector('.x-search-enhancer-badge')) {
+            userNameContainer.appendChild(badge);
+        }
+      } else {
+          userLinkElement.parentElement?.appendChild(badge);
       }
     }
-  
-    // 切换面板显示
+
     async togglePanel() {
-      if (this.panel) { // 如果面板存在，表示要关闭
-        try {
-            await chrome.storage.local.set({ isPanelGloballyOpen: false });
-            console.log('Panel persistence disabled by user (toggle).');
-          } catch (error) {
-            console.error('Failed to disable panel persistence (toggle):', error);
+        if (this.panel) {
+          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
+              try {
+                  await chrome.storage.local.set({ isPanelGloballyOpen: false });
+                  this.isPanelGloballyOpenState = false;
+                  // console.log('XSE: Panel persistence disabled by user (toggle).');
+              } catch (error) {
+                  if (error.message && error.message.includes("Extension context invalidated")) {
+                      console.warn('XSE: Failed to disable panel persistence (toggle panel): Context invalidated.');
+                  } else {
+                      console.error('XSE: Failed to disable panel persistence (toggle panel):', error);
+                  }
+              }
+          } else {
+              console.warn('XSE: Context invalidated before disabling panel persistence (toggle panel).');
           }
-        this.removePanel(); 
-      } else { // 面板不存在，表示要创建
-        this.createPanel(); // createPanel 内部不处理 isPanelGloballyOpen
-        try {
-            await chrome.storage.local.set({ isPanelGloballyOpen: true });
-            this.isPanelGloballyOpenState = true; // 更新本地副本
-            console.log('Panel persistence enabled.');
-          } catch (error) {
-            console.error('Failed to enable panel persistence:', error);
+          this.removePanel();
+        } else {
+          this.createPanel(); // createPanel 内部不处理 isPanelGloballyOpen
+          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
+              try {
+                  await chrome.storage.local.set({ isPanelGloballyOpen: true });
+                  this.isPanelGloballyOpenState = true;
+                  // console.log('XSE: Panel persistence enabled.');
+              } catch (error) {
+                  if (error.message && error.message.includes("Extension context invalidated")) {
+                      console.warn('XSE: Failed to enable panel persistence: Context invalidated.');
+                  } else {
+                      console.error('XSE: Failed to enable panel persistence:', error);
+                  }
+              }
+          } else {
+              console.warn('XSE: Context invalidated before enabling panel persistence.');
           }
+        }
       }
-    }
-  
-    // 创建搜索面板 - Apple Design 风格
-    async createPanel() {
+
+    createPanel() {
+      if (document.getElementById(DOM_SELECTORS.PANEL.ID)) {
+        this.panel = document.getElementById(DOM_SELECTORS.PANEL.ID);
+        this.updatePanelUserList();
+        return;
+      }
+
       const panelContainer = document.createElement('div');
-      panelContainer.id = 'x-search-enhancer-panel';
-  
+      panelContainer.id = DOM_SELECTORS.PANEL.ID;
+
       panelContainer.innerHTML = `
         <div>
-          <!-- 头部 -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
             <h2>X 搜索增强</h2>
-            <button id="close-panel">×</button>
+            <button id="${DOM_SELECTORS.PANEL.CLOSE_BUTTON.substring(1)}">×</button>
           </div>
-  
-          <!-- 搜索框 -->
           <div style="margin-bottom: 28px;">
             <div class="search-input-container">
               <div class="search-icon">🔍</div>
-              <input 
-                type="text" 
-                id="search-keywords" 
-                placeholder="搜索关键词..." 
-              >
+              <input type="text" id="${DOM_SELECTORS.PANEL.SEARCH_INPUT.substring(1)}" placeholder="搜索关键词...">
             </div>
           </div>
-  
-          <!-- 特别关注用户列表 -->
           <div style="margin-bottom: 28px;">
             <h3>
               特别关注
               <div class="user-count-badge">${this.specialUsers.length}</div>
             </h3>
-            <div id="special-users-container">
-              <div id="special-users-list">
-                <!-- 用户列表将在这里动态生成 -->
-              </div>
+            <div id="${DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1)}">
             </div>
           </div>
-  
-          <!-- 搜索按钮 -->
-          <button id="execute-search">
-            开始搜索
-          </button>
+          <button id="${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}">开始搜索</button>
         </div>
       `;
-  
+
       document.body.appendChild(panelContainer);
       this.panel = panelContainer;
-  
+
       this.bindPanelEvents();
       this.updatePanelUserList();
     }
-  
-    // 绑定面板事件
+
     bindPanelEvents() {
-      // 关闭按钮
-      if (document.getElementById('close-panel')) { // 确保元素存在
-        document.getElementById('close-panel').addEventListener('click', async () => {
-          // 20250602 新增：在关闭面板时，设置 isPanelGloballyOpen 为 false
-          try {
-            await chrome.storage.local.set({ isPanelGloballyOpen: false });
-            this.isPanelGloballyOpenState = false; // 更新本地副本
-            console.log('Panel persistence disabled by user (panel close button).');
-          } catch (error) {
-            console.error('Failed to disable panel persistence (panel close):', error);
+      if (!this.panel) return;
+
+      const closeButton = this.panel.querySelector(DOM_SELECTORS.PANEL.CLOSE_BUTTON);
+      if (closeButton) {
+        closeButton.addEventListener('click', async () => {
+          if (chrome.runtime && chrome.runtime.id) { // 检查上下文
+            try {
+                await chrome.storage.local.set({ isPanelGloballyOpen: false });
+                this.isPanelGloballyOpenState = false;
+                // console.log('XSE: Panel persistence disabled by user (panel close button).');
+            } catch (error) {
+                if (error.message && error.message.includes("Extension context invalidated")) {
+                    console.warn('XSE: Failed to disable panel persistence (panel close): Context invalidated.');
+                } else {
+                    console.error('XSE: Failed to disable panel persistence (panel close):', error);
+                }
+            }
+          } else {
+            console.warn('XSE: Context invalidated before disabling panel persistence (panel close button).');
           }
-          this.removePanel(); // removePanel 不再需要单独设置 isPanelGloballyOpen
+          this.removePanel();
         });
       }
-  
-      // 执行搜索
-      document.getElementById('execute-search').addEventListener('click', () => {
-        this.executeSearch();
-      });
-  
-      // 按 Enter 执行搜索
-      document.getElementById('search-keywords').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          this.executeSearch();
-        }
-      });
-  
-      // 点击面板外部关闭面板
-      document.addEventListener('click', (e) => {
-        if (this.panel && !this.panel.contains(e.target)) {
-          // 延迟关闭，避免误触
-          setTimeout(() => {
-            if (this.panel && !this.panel.matches(':hover')) {
-              this.removePanel();
+
+      const executeSearchButton = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
+      if (executeSearchButton) {
+          executeSearchButton.addEventListener('click', () => this.executeSearch());
+      }
+
+      const searchKeywordsInput = this.panel.querySelector(DOM_SELECTORS.PANEL.SEARCH_INPUT);
+      if (searchKeywordsInput) {
+          searchKeywordsInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              this.executeSearch();
             }
-          }, 200);
-        }
-      });
+          });
+      }
     }
-  
-    // 更新面板中的用户列表
+
     updatePanelUserList() {
-      const userListContainer = document.getElementById('special-users-list');
+      if (!this.panel) return;
+
+      const userListContainer = this.panel.querySelector(DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER);
       if (!userListContainer) return;
-  
-      // 更新计数器
-      const counter = this.panel.querySelector('.user-count-badge');
+
+      const counter = this.panel.querySelector(DOM_SELECTORS.PANEL.USER_COUNT_BADGE);
       if (counter) {
         counter.textContent = this.specialUsers.length;
       }
-  
+
       if (this.specialUsers.length === 0) {
         userListContainer.innerHTML = `
           <div class="empty-state">
@@ -480,22 +598,21 @@ class XSearchEnhancer {
         `;
         return;
       }
-  
-      userListContainer.innerHTML = this.specialUsers.map((user, index) => `
+
+      userListContainer.innerHTML = this.specialUsers.map(user => `
         <div class="special-user-item" data-username="${user.username}">
           <div class="user-info">
             <div class="user-indicator"></div>
             <div class="user-details">
-              <div class="user-display-name">${user.displayName}</div>
+              <div class="user-display-name">${user.displayName || user.username}</div>
               <div class="user-username">@${user.username}</div>
             </div>
           </div>
-          <button class="remove-user" data-username="${user.username}">×</button>
+          <button class="remove-user" data-username="${user.username}" title="移除用户">×</button>
         </div>
       `).join('');
-  
-      // 绑定用户项点击事件
-      userListContainer.querySelectorAll('.special-user-item').forEach(item => {
+
+      userListContainer.querySelectorAll(DOM_SELECTORS.PANEL.SPECIAL_USER_ITEM).forEach(item => {
         item.addEventListener('click', (e) => {
           if (!e.target.classList.contains('remove-user')) {
             const username = item.dataset.username;
@@ -503,17 +620,15 @@ class XSearchEnhancer {
           }
         });
       });
-  
-      // 绑定移除按钮事件
-      userListContainer.querySelectorAll('.remove-user').forEach(btn => {
+
+      userListContainer.querySelectorAll(DOM_SELECTORS.PANEL.REMOVE_USER_BUTTON).forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const username = e.target.dataset.username;
           this.specialUsers = this.specialUsers.filter(user => user.username !== username);
           await this.saveSpecialUsers();
           this.updatePanelUserList();
-          
-          // 更新用户主页按钮状态
+
           if (this.currentUsername === username) {
             const profileButton = document.querySelector('.x-search-enhancer-follow-btn');
             if (profileButton) {
@@ -524,77 +639,91 @@ class XSearchEnhancer {
         });
       });
     }
-  
-    // 执行搜索
+
     executeSearch() {
-      const keywords = document.getElementById('search-keywords').value.trim();
-      
+      if (!this.panel) return;
+      const keywordsInput = this.panel.querySelector(DOM_SELECTORS.PANEL.SEARCH_INPUT);
+      if (!keywordsInput) return;
+
+      const keywords = keywordsInput.value.trim();
+
       if (!keywords) {
-        // 搜索框错误状态
-        const searchInput = document.getElementById('search-keywords');
-        searchInput.classList.add('error-state');
+        keywordsInput.classList.add('error-state');
         setTimeout(() => {
-          searchInput.classList.remove('error-state');
+          keywordsInput.classList.remove('error-state');
         }, 500);
         return;
       }
-  
+
       let searchQuery = keywords;
-      
-      // 如果有特别关注用户，则限制搜索范围
       if (this.specialUsers.length > 0) {
         const usernames = this.specialUsers.map(user => `from:${user.username}`).join(' OR ');
         searchQuery = `(${usernames}) ${keywords}`;
       }
-      
+
       const encodedQuery = encodeURIComponent(searchQuery);
       const searchUrl = `https://x.com/search?q=${encodedQuery}&src=typed_query`;
-      
-      // 添加搜索动画效果
-      const searchBtn = document.getElementById('execute-search');
-      searchBtn.innerHTML = '搜索中...';
-      searchBtn.style.opacity = '0.7';
-      
+
+      const searchBtn = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
+      if (searchBtn) {
+          searchBtn.innerHTML = '搜索中...';
+          searchBtn.style.opacity = '0.7';
+      }
+
       setTimeout(() => {
         window.location.href = searchUrl;
       }, 300);
     }
-  
-    // 移除面板：removePanel() 自身的核心职责是移除 DOM 元素和清理状态，isPanelGloballyOpen 的管理最好放在触发关闭动作的源头
+
     removePanel() {
       if (this.panel) {
-        // 20250602 新增：当通过 togglePanel (用户再次点击插件图标) 关闭时，也应设置 isPanelGloballyOpen = false
-        // 这一步现在由 togglePanel (如果 panel 存在则调用 removePanel) 处理
-        // 或者由面板内关闭按钮的事件处理程序处理
-        // 为了确保，如果调用 removePanel 意味着用户想要关闭它，我们可以在这里也设置：
-        (async () => {
-            try {
-                // 只有当 removePanel 是由用户显式操作（如 togglePanel 或内部关闭按钮）触发时，才应设置为 false
-                // 避免在页面卸载等自动移除时错误地改变用户意图
-                // 鉴于此，将 isPanelGloballyOpen 的设置放在调用 removePanel 的地方更精确
-                // 此处暂时不修改 isPanelGloballyOpen，依赖调用者
-            } catch (error) {
-                // console.error('Failed to update panel persistence on remove:', error);
-            }
-        })();
-
-
         this.panel.style.animation = 'slideOutPanel 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
         setTimeout(() => {
           if (this.panel) {
             this.panel.remove();
             this.panel = null;
           }
-        }, 300);
+        }, 290);
       }
     }
   }
-  
-  // 更安全的实例化：
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        const xSearchEnhancer = new XSearchEnhancer();
-    });
-  } else {
-    const xSearchEnhancer = new XSearchEnhancer();
-  }
+
+/**
+ * @async
+ * @function initializeExtension
+ * @description 异步初始化扩展。它会等待页面关键区域加载完成后再实例化 XSearchEnhancer。
+ * 这是模块2 - 动态内容加载处理器的核心部分，确保扩展在页面准备好后才启动。
+ */
+async function initializeExtension() {
+    // 检查扩展上下文是否仍然有效，以防页面在DOMContentLoaded后迅速卸载
+    if (!(chrome.runtime && chrome.runtime.id)) {
+        console.warn('XSE: Context invalidated before extension initialization could start.');
+        return;
+    }
+
+    // 等待一个核心的页面容器元素出现，表明页面已基本加载。
+    // DOM_SELECTORS.MAIN_CONTENT_AREA (main[role="main"]) 是一个不错的选择。
+    // 给与一个相对宽松的超时时间，因为这是首次加载。
+    const mainPageArea = await findElementAdvanced(DOM_SELECTORS.MAIN_CONTENT_AREA, document, 15000); // 等待最多15秒
+
+    if (mainPageArea) {
+        // console.log("XSE: Main content area found, initializing XSearchEnhancer.");
+        // 再次检查上下文，因为 await 可能会有延迟
+        if (chrome.runtime && chrome.runtime.id) {
+            const xSearchEnhancer = new XSearchEnhancer();
+        } else {
+            console.warn('XSE: Context invalidated just before XSearchEnhancer instantiation.');
+        }
+    } else {
+        console.warn(`XSE: Main content area (${DOM_SELECTORS.MAIN_CONTENT_AREA}) not found after 15s timeout. XSearchEnhancer not initialized. URL:`, window.location.href);
+    }
+}
+
+// 扩展启动逻辑
+// 确保在文档基本结构加载完成后开始尝试初始化。
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeExtension);
+} else {
+  // 如果 DOMContentLoaded 已经触发，则直接尝试初始化。
+  initializeExtension();
+}

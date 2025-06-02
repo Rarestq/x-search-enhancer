@@ -371,26 +371,33 @@
   
   /* 用户主页的特别关注按钮 */
   .x-search-enhancer-follow-btn {
-    margin-left: 12px !important;
-    background: none !important;
-    border: none !important;
-    font-size: 20px !important;
+    display: inline-flex !important; /* 使用 inline-flex 更好地控制内部对齐 */
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important; /* 尝试垂直对齐 */
+    margin-left: 8px !important;    /* 与用户名的间距 */
+    padding: 4px !important;         /* 调整内边距，使其更紧凑 */
+    font-size: 18px !important;      /* 图标大小 (可以根据需要调整) */
+    line-height: 1 !important;       /* 确保行高不会导致按钮过高 */
+    color: var(--primary-blue) !important; /* 保持原有颜色 */
+    background: transparent !important; /* 透明背景 */
+    border: none !important;            /* 移除边框 */
+    border-radius: 50% !important; /* 可以尝试圆形按钮 */
     cursor: pointer !important;
-    color: var(--primary-blue) !important;
-    padding: 6px !important;
-    border-radius: var(--radius-small) !important;
-    transition: all var(--transition-fast) !important;
-    position: relative !important;
+    transition: all var(--transition-fast) !important; /* 保留过渡效果 */
+    /* opacity: 0.8 !important; */ /* 可以根据需要调整初始透明度 */
   }
   
   .x-search-enhancer-follow-btn:hover {
-    background: rgba(0, 122, 255, 0.1) !important;
-    transform: scale(1.15) !important;
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2) !important;
+    background: rgba(0, 122, 255, 0.1) !important; /* 保留原有 hover 背景 */
+    transform: scale(1.15) !important; /* 保留原有 hover 缩放 */
+    /* opacity: 1 !important; */
+    /* box-shadow: 0 2px 8px rgba(0, 122, 255, 0.15) !important; */ /* 可以调整阴影 */
   }
   
   .x-search-enhancer-follow-btn:active {
-    transform: scale(0.95) !important;
+    transform: scale(0.95) !important; /* 保留原有 active 缩放 */
+    background: rgba(0, 122, 255, 0.05) !important; /* active 状态的细微背景变化 */
   }
   
   /* 搜索结果徽章 */
