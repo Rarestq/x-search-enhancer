@@ -318,57 +318,96 @@ class XSearchEnhancer {
       }
     }
 
+    /**
+     * 处理当前页面类型，精确控制 addUserProfileButton 的调用。
+     * @async
+     */
     async handlePageType() {
-      const url = window.location.href;
-
-      if (this.isUserProfilePage(url)) {
-        await this.addUserProfileButton();
-      }
-
-      const primaryColumn = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN);
-      if (primaryColumn) {
-          this.addSearchResultsBadges();
-      }
-    }
-
-    isUserProfilePage(url) {
-      const userProfileRegex = /^https?:\/\/(x\.com|twitter\.com)\/([^\/\?#]+)(?:\/?)$/;
-      const match = url.match(userProfileRegex);
-
-      if (match) {
-        const username = match[2];
-        const excludedPaths = ['home', 'explore', 'notifications', 'messages', 'bookmarks', 'lists', 'profile', 'more', 'compose', 'search', 'settings', 'help', 'i', 'intent', 'search-advanced', 'tos', 'privacy', 'jobs', 'about', 'status', 'verified-choose'];
-
-        if (!excludedPaths.includes(username.toLowerCase()) && !username.includes('/')) {
-          this.currentUsername = username;
-          return true;
+        const url = window.location.href;
+  
+        // isUserProfilePage 会设置或清空 this.currentUsername
+        if (this.isUserProfilePage(url) && this.currentUsername) {
+          // 只有当确定是用户配置页并且成功获取了用户名时才添加按钮
+          await this.addUserProfileButton();
+        } else {
+          // 如果不是用户配置页，或者未能从URL解析出用户名，
+          // 则尝试移除可能存在的旧按钮（例如SPA切换后残留的）
+          const existingButton = document.querySelector('.x-search-enhancer-follow-btn');
+          if (existingButton) {
+            existingButton.remove();
+            // console.log("XSE: Removed lingering follow button as current page is not a user profile or username is missing.");
+          }
         }
-      }
-      return false;
+  
+        // 为搜索结果添加星标徽章
+        const primaryColumn = await findElementAdvanced(DOM_SELECTORS.PRIMARY_COLUMN);
+        if (primaryColumn) {
+            this.addSearchResultsBadges();
+        }
     }
+
+    /**
+     * 查是否为用户主页，并设置 this.currentUsername。
+     * @param {string} url - 当前页面的URL。
+     * @returns {boolean} 如果是用户主页则返回true，否则返回false。
+     */
+    isUserProfilePage(url) {
+        const userProfileRegex = /^https?:\/\/(x\.com|twitter\.com)\/([^\/\?#]+)(?:\/?)$/;
+        const match = url.match(userProfileRegex);
+  
+        if (match) {
+          const usernameFromUrl = match[2];
+          // 扩展的排除路径列表，避免将功能性页面误认为用户配置页
+          const excludedPaths = [
+              'home', 'explore', 'notifications', 'messages', 'bookmarks', 'lists',
+              'profile', // 'profile' 本身通常不是用户名，但 x.com/profile/settings 之类的需要排除
+              'i', // 用于 intents, embeds 等
+              'settings', 'search', 'compose', 'tos', 'privacy', 'about', 'jobs', 'status',
+              'verified-choose', 'search-advanced', 'help', 'display', 'logout', 'login',
+              'signup', 'flow', 'following', 'followers', 'topics', 'communities', 'premium',
+              'hashtag', 'explore', 'connect_people', 'topics_picker', // 更多可能的非用户路径
+              // 检查路径中是否包含通常与操作相关的子路径
+          ];
+  
+          // 确保提取的 usernameFromUrl 不是排除列表中的，并且不包含进一步的路径分隔符 (如 /status/)
+          // 同时，用户名通常不应过短或包含特殊字符（这里简化处理，主要排除已知路径）
+          if (!excludedPaths.includes(usernameFromUrl.toLowerCase()) &&
+              !usernameFromUrl.includes('/') &&
+              usernameFromUrl.length > 0 && // 用户名通常有一定长度
+              !['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].includes(usernameFromUrl) // 排除纯数字的路径 (通常不是用户名)
+             ) {
+            this.currentUsername = usernameFromUrl;
+            // console.log(`XSE: User profile page detected. Username set to: ${this.currentUsername}`);
+            return true;
+          }
+        }
+  
+        // 如果不匹配用户配置页的模式，则清空当前用户名
+        this.currentUsername = null;
+        return false;
+      }
 
     isSearchResultsPage(url) {
       return url.includes('/search?q=') || url.includes('/search?f=');
     }
 
     async addUserProfileButton() {
+      // 首先移除任何已存在的按钮，以防重复添加
       const existingButton = document.querySelector('.x-search-enhancer-follow-btn');
       if (existingButton) {
         existingButton.remove();
       }
 
-      // 尝试定位用户名所在的行或其直接父容器
-      // 关键: 确保这里的选择器是最新的，并且能匹配目标页面的DOM结构
-      // 例如: const userNameLineContainer = await findElementAdvanced(['div[data-testid="UserName"]', 'another-selector-if-needed'], document, 10000); // 增加超时并提供备选
-      const userNameLineContainer = await findElementAdvanced(DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER, document, 10000); // 增加超时到10秒
+      // 使用findElementAdvanced等待用户名容器出现，超时时间为10秒
+      const userNameLineContainer = await findElementAdvanced(DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER, document, 10000);
 
       if (userNameLineContainer) {
-        console.log("XSE: Username line container found for profile button:", userNameLineContainer);
-        // 将按钮附加到这个容器，它通常是行内或宽度自适应的
+        // console.log("XSE: Username line container found for profile button:", userNameLineContainer);
         this.createFollowButton(userNameLineContainer);
       } else {
-        // 这个警告依然可能出现，如果选择器确实不匹配或元素未在10秒内加载
-        console.warn('XSE: Username line container not found on profile page after timeout. Follow button not added.');
+        // 如果超时后仍未找到容器，则记录警告，按钮不会被添加
+        // 用户应检查 DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER 是否需要更新
+        console.warn(`XSE: Username line container not found on profile page after 10s timeout. Follow button not added. URL: ${window.location.href}. Ensure DOM_SELECTORS.PROFILE_PAGE.USER_NAME_LINE_CONTAINER is up-to-date.`);
       }
     }
 
