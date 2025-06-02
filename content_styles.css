@@ -542,3 +542,157 @@
       transition: none !important;
     }
   }
+
+  /* ---------------------------------- */
+/* XSE 高级筛选区域样式 (XSE Advanced Filters Styles) */
+/* ---------------------------------- */
+
+/* 高级筛选切换按钮 */
+#x-search-enhancer-panel #xse-toggle-advanced-filters-btn {
+    background: none !important; /* 覆盖可能的内联样式 */
+    border: none !important; /* 覆盖可能的内联样式 */
+    color: var(--primary-blue) !important; /* 使用CSS变量 */
+    cursor: pointer !important;
+    padding: 8px 0 !important;
+    margin-top: 0px !important;
+    margin-bottom: 10px !important;
+    font-size: 15px; /* 调整字体大小以匹配其他文本 */
+    font-weight: 500;
+    display: block; /* 确保其占据整行以便对齐 */
+    width: 100%;
+    text-align: left; /* 按钮文本左对齐 */
+    transition: color var(--transition-fast);
+  }
+  
+  #x-search-enhancer-panel #xse-toggle-advanced-filters-btn:hover {
+    color: var(--secondary-purple); /* 悬停时变色 */
+  }
+  
+  /* 高级筛选区域容器 */
+  #x-search-enhancer-panel #xse-advanced-filters-area {
+    border: 1px solid var(--border-color) !important; /* 覆盖可能的内联样式 */
+    border-radius: var(--radius-medium) !important; /* 覆盖可能的内联样式 */
+    padding: 20px !important; /* 覆盖可能的内联样式 */
+    margin-bottom: 28px !important; /* 覆盖可能的内联样式 */
+    background-color: var(--background-tertiary); /* 给一个轻微的背景色以区分 */
+    /* display: none;  由JS控制初始状态 */
+    /* 展开/收起动画 - 使用 max-height 和 opacity */
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), padding-top 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), padding-bottom 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+  
+  #x-search-enhancer-panel #xse-advanced-filters-area.xse-expanded {
+    max-height: 1000px; /* 一个足够大的值以容纳所有内容 */
+    opacity: 1;
+    padding-top: 20px; /* 恢复内边距 */
+    padding-bottom: 20px; /* 恢复内边距 */
+  }
+  
+  /* 筛选条件分组的通用样式 */
+  #x-search-enhancer-panel .xse-filter-group {
+    margin-bottom: 20px; /* 组之间的间距 */
+  }
+  #x-search-enhancer-panel .xse-filter-group:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* 标签样式 */
+  #x-search-enhancer-panel .xse-label {
+    display: block;
+    margin-bottom: 8px; /* 标签和输入控件之间的间距 */
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  
+  /* 输入框 (文本, 日期) 和下拉选择框的通用样式 */
+  #x-search-enhancer-panel .xse-input,
+  #x-search-enhancer-panel .xse-date-input,
+  #x-search-enhancer-panel .xse-select {
+    width: 100% !important; /* 覆盖可能的内联样式 */
+    padding: 12px 16px; /* 调整内边距 */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-small); /* 调整圆角 */
+    font-size: 15px;
+    background: var(--background-secondary);
+    color: var(--text-primary);
+    outline: none !important;
+    transition: border-color var(--transition-medium), box-shadow var(--transition-medium);
+    box-sizing: border-box; /* 确保 padding 和 border 不会增加元素的总宽度 */
+  }
+  
+  #x-search-enhancer-panel .xse-input::placeholder,
+  #x-search-enhancer-panel .xse-date-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+  
+  #x-search-enhancer-panel .xse-input:focus,
+  #x-search-enhancer-panel .xse-date-input:focus,
+  #x-search-enhancer-panel .xse-select:focus {
+    border-color: var(--primary-blue) !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1); /* 调整阴影 */
+  }
+  
+  /* 特定于日期输入的样式 (如果需要) */
+  #x-search-enhancer-panel .xse-date-input {
+    /* 可以添加特定于日期选择器的样式，例如日历图标的颜色（如果浏览器允许） */
+  }
+  
+  /* 复选框容器和标签样式 */
+  #x-search-enhancer-panel .xse-checkbox-container {
+    display: flex !important; /* 覆盖可能的内联样式 */
+    align-items: center !important; /* 覆盖可能的内联样式 */
+    margin-bottom: 10px !important; /* 复选框之间的间距 */
+  }
+  #x-search-enhancer-panel .xse-checkbox-container:last-child {
+      margin-bottom: 0;
+  }
+  
+  #x-search-enhancer-panel .xse-checkbox-input { /* 复选框本身的样式 */
+    margin-right: 10px !important; /* 覆盖可能的内联样式 */
+    accent-color: var(--primary-blue); /* 改变复选框选中时的颜色 */
+    width: 16px; /* 调整大小 */
+    height: 16px; /* 调整大小 */
+    cursor: pointer;
+  }
+  
+  #x-search-enhancer-panel .xse-checkbox-label { /* 复选框标签的样式 */
+    font-size: 15px;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none; /* 防止文本被选中 */
+  }
+  
+  /* 清除筛选按钮 */
+  #x-search-enhancer-panel #xse-clear-filters-btn.xse-button { /* 使用类名以便统一 */
+    padding: 10px 18px !important; /* 覆盖可能的内联样式 */
+    border: 1px solid var(--border-color) !important; /* 覆盖可能的内联样式 */
+    border-radius: var(--radius-small) !important; /* 覆盖可能的内联样式 */
+    cursor: pointer !important;
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  }
+  
+  #x-search-enhancer-panel #xse-clear-filters-btn.xse-button:hover {
+    background-color: rgba(120, 120, 128, 0.18); /* 调整悬停背景色 */
+    border-color: rgba(120, 120, 128, 0.3);
+  }
+  
+  /* 日期错误提示信息 */
+  #x-search-enhancer-panel #xse-date-error-message {
+    color: #FF3B30 !important; /* 更鲜明的红色 */
+    font-size: 13px;
+    margin-top: 8px;
+    /* display: none; 由JS控制 */
+  }
+  
+  /* 用于JS控制显隐的通用类 */
+  .xse-hidden {
+      display: none !important;
+  }  

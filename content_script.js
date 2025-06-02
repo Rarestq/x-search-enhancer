@@ -55,7 +55,44 @@ const DOM_SELECTORS = {
         EMPTY_STATE_CONTAINER: '#special-users-list .empty-state',
         SPECIAL_USER_ITEM: '.special-user-item',
         REMOVE_USER_BUTTON: '.remove-user',
+
+        // === Advance-filters-selectors ===
+        // 20250602 新增：高级筛选相关选择器
+        TOGGLE_ADVANCED_FILTERS_BTN_ID: 'xse-toggle-advanced-filters-btn',
+        ADVANCED_FILTERS_AREA_ID: 'xse-advanced-filters-area',
+        
+        FROM_USER_CONTAINER_ID: 'xse-from-user-container',
+        FROM_USER_INPUT_ID: 'xse-from-user',
+        
+        SINCE_DATE_INPUT_ID: 'xse-since-date',
+        UNTIL_DATE_INPUT_ID: 'xse-until-date',
+        DATE_ERROR_MESSAGE_ID: 'xse-date-error-message',
+
+        FILTER_VERIFIED_CHECKBOX_ID: 'xse-filter-verified',
+        FILTER_IMAGES_CHECKBOX_ID: 'xse-filter-images',
+        FILTER_VIDEOS_CHECKBOX_ID: 'xse-filter-videos',
+        FILTER_LINKS_CHECKBOX_ID: 'xse-filter-links',
+
+        LANG_CODE_SELECT_ID: 'xse-lang-code',
+        EXCLUDE_REPLIES_CHECKBOX_ID: 'xse-exclude-replies',
+
+        CLEAR_FILTERS_BTN_ID: 'xse-clear-filters-btn',
     }
+};
+
+// === Advance-filters ===
+// 20250602 新增：高级筛选持久化存储键名
+const ADVANCED_FILTER_STORAGE_KEYS = {
+    EXPANDED: 'xseAdvancedFiltersExpanded',
+    FROM_USER: 'xseAdvancedFilterFromUser',
+    SINCE_DATE: 'xseAdvancedFilterSinceDate',
+    UNTIL_DATE: 'xseAdvancedFilterUntilDate',
+    FILTER_VERIFIED: 'xseAdvancedFilterVerified',
+    FILTER_IMAGES: 'xseAdvancedFilterImages',
+    FILTER_VIDEOS: 'xseAdvancedFilterVideos',
+    FILTER_LINKS: 'xseAdvancedFilterLinks',
+    LANG_CODE: 'xseAdvancedFilterLangCode',
+    EXCLUDE_REPLIES: 'xseAdvancedFilterExcludeReplies',
 };
 
 /**
@@ -120,7 +157,194 @@ class XSearchEnhancer {
       this.specialUsers = [];
       this.currentUsername = null;
       this.isPanelGloballyOpenState = false; // 本地缓存的插件面板打开状态
+      // === Advance-filters ===
+      // 20250602 新增：用于存储高级筛选当前值的对象
+      this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
       // this.init(); // init 将在 initializeExtension 中被调用
+    }
+
+    // === Advance-filters ===
+    // 20250602 新增：获取高级筛选默认值
+    _getDefaultAdvancedFilterValues() {
+        return {
+            [ADVANCED_FILTER_STORAGE_KEYS.FROM_USER]: '',
+            [ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]: '',
+            [ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]: '',
+            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]: false,
+            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES]: false,
+            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS]: false,
+            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS]: false,
+            [ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE]: '',
+            [ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]: false,
+        };
+    }
+
+    // --- UI 组件生成辅助方法 ---
+    _createButton(id, text, { className = '', type = 'button', additionalClasses = [] } = {}) {
+        const button = document.createElement('button');
+        button.id = id;
+        button.type = type;
+        button.textContent = text;
+        button.className = className; // 主要类名
+        additionalClasses.forEach(cls => button.classList.add(cls)); // 添加额外类名
+        return button;
+    }
+
+    _createLabeledInput(containerId, inputId, labelText, inputType = 'text', placeholder = '', { containerClasses = [], labelClasses = ['xse-label'], inputClasses = ['xse-input'] } = {}) {
+        const container = document.createElement('div');
+        if(containerId) container.id = containerId;
+        container.classList.add('xse-filter-group'); // 通用分组类
+        containerClasses.forEach(cls => container.classList.add(cls));
+
+        const label = document.createElement('label');
+        label.htmlFor = inputId;
+        label.textContent = labelText;
+        labelClasses.forEach(cls => label.classList.add(cls));
+        
+        const input = document.createElement('input');
+        input.type = inputType;
+        input.id = inputId;
+        input.placeholder = placeholder;
+        inputClasses.forEach(cls => input.classList.add(cls));
+        if (inputType === 'date') {
+            input.classList.add('xse-date-input'); // 特定日期输入类
+        }
+
+        container.appendChild(label);
+        container.appendChild(input);
+        return container;
+    }
+    
+    _createLabeledCheckbox(checkboxId, labelText, { containerClasses = [], checkboxInputClasses = ['xse-checkbox-input'], labelClasses = ['xse-checkbox-label'], marginTop = '0px' } = {}) {
+        const container = document.createElement('div');
+        container.classList.add('xse-checkbox-container');
+        containerClasses.forEach(cls => container.classList.add(cls));
+        if (marginTop !== '0px') container.style.marginTop = marginTop; // 保留 marginTop 以便微调
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = checkboxId;
+        checkboxInputClasses.forEach(cls => checkbox.classList.add(cls));
+
+        const label = document.createElement('label');
+        label.htmlFor = checkboxId;
+        label.textContent = labelText;
+        labelClasses.forEach(cls => label.classList.add(cls));
+        
+        container.appendChild(checkbox);
+        container.appendChild(label);
+        return container;
+    }
+
+    _createLabeledSelect(selectId, labelText, optionsArray, { containerClasses = [], labelClasses = ['xse-label'], selectClasses = ['xse-select'] } = {}) {
+        const container = document.createElement('div');
+        container.classList.add('xse-filter-group');
+        containerClasses.forEach(cls => container.classList.add(cls));
+
+        const label = document.createElement('label');
+        label.htmlFor = selectId;
+        label.textContent = labelText;
+        labelClasses.forEach(cls => label.classList.add(cls));
+
+        const select = document.createElement('select');
+        select.id = selectId;
+        selectClasses.forEach(cls => select.classList.add(cls));
+
+        optionsArray.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            select.appendChild(option);
+        });
+
+        container.appendChild(label);
+        container.appendChild(select);
+        return container;
+    }
+
+    // --- 高级筛选区域渲染方法 ---
+    _renderAdvancedFiltersArea() {
+        const area = document.createElement('div');
+        area.id = DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID;
+        // area.style.display = 'none'; // 初始隐藏由 CSS 控制或 JS 添加 .xse-hidden
+        area.classList.add('xse-advanced-filters-area'); // 应用主区域样式
+        area.setAttribute('role', 'region');
+        area.setAttribute('aria-labelledby', DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID);
+
+        // 1. 用户筛选组
+        area.appendChild(this._createLabeledInput(
+            DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID, // 容器ID用于JS控制显隐
+            DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID,
+            '指定用户 (From user):',
+            'text',
+            'username'
+        ));
+
+        // 2. 日期筛选组
+        const dateFilterGroup = document.createElement('div');
+        dateFilterGroup.classList.add('xse-filter-group');
+        dateFilterGroup.appendChild(this._createLabeledInput(
+            '', 
+            DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID,
+            '开始日期 (Since):',
+            'date',
+            '',
+            { containerClasses: ['xse-date-since-container'] } // 可以添加更具体的类
+        ));
+        dateFilterGroup.appendChild(this._createLabeledInput(
+            '', 
+            DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID,
+            '结束日期 (Until):',
+            'date',
+            '',
+            { containerClasses: ['xse-date-until-container'] }
+        ));
+        const dateErrorMessage = document.createElement('small');
+        dateErrorMessage.id = DOM_SELECTORS.PANEL.DATE_ERROR_MESSAGE_ID;
+        dateErrorMessage.classList.add('xse-date-error'); // 应用错误提示样式
+        // dateErrorMessage.style.display = 'none'; // 由JS控制
+        dateErrorMessage.classList.add('xse-hidden');
+        dateFilterGroup.appendChild(dateErrorMessage);
+        area.appendChild(dateFilterGroup);
+
+        // 3. 内容类型筛选组
+        const contentTypeGroup = document.createElement('div');
+        contentTypeGroup.classList.add('xse-filter-group');
+        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID, '认证用户 (Verified users)'));
+        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID, '包含图片 (Includes images)'));
+        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID, '包含视频 (Includes videos)'));
+        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID, '包含链接 (Includes links)'));
+        area.appendChild(contentTypeGroup);
+        
+        // 4. 推文属性筛选组
+        const langOptions = [
+            { text: '任意语言', value: '' }, { text: '中文', value: 'zh' },
+            { text: '英语', value: 'en' }, { text: '日语', value: 'ja' },
+            { text: '韩语', value: 'ko' },
+        ];
+        area.appendChild(this._createLabeledSelect(
+            DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID,
+            '语言 (Language):',
+            langOptions
+        ));
+        area.appendChild(this._createLabeledCheckbox(
+            DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID, 
+            '排除回复 (Exclude replies)',
+            { marginTop: '10px' }
+        ));
+        
+        // 5. 操作按钮组
+        const actionButtonsGroup = document.createElement('div');
+        actionButtonsGroup.classList.add('xse-filter-group'); // 也作为一组
+        actionButtonsGroup.style.marginTop = '20px'; // 保持这个微调
+        actionButtonsGroup.appendChild(this._createButton(
+            DOM_SELECTORS.PANEL.CLEAR_FILTERS_BTN_ID,
+            '清除筛选',
+            { additionalClasses: ['xse-button'] } // 使用通用按钮类
+        ));
+        area.appendChild(actionButtonsGroup);
+
+        return area;
     }
 
     /**
@@ -150,6 +374,9 @@ class XSearchEnhancer {
 
     async init() {
       await this.loadSpecialUsers();
+      // === Advance-filters ===
+      // 20250602 新增：在加载特别关注用户后，加载高级筛选状态
+      await this._loadAdvancedFilterStates(); 
 
       // 检查上下文有效性
       if (chrome.runtime && chrome.runtime.id) {
@@ -187,6 +414,155 @@ class XSearchEnhancer {
 
       this.handlePageType();
       this.observeUrlChange();
+    }
+
+    // === Advance-filters ===
+    // --- 新增：高级筛选状态持久化方法 ---
+    async _loadAdvancedFilterStates() {
+        return new Promise((resolve) => {
+            if (chrome.runtime && chrome.runtime.id) {
+                const keysToGet = [
+                    ADVANCED_FILTER_STORAGE_KEYS.EXPANDED,
+                    ...Object.values(ADVANCED_FILTER_STORAGE_KEYS).filter(k => k !== ADVANCED_FILTER_STORAGE_KEYS.EXPANDED) // 获取所有筛选条件的值
+                ];
+                chrome.storage.local.get(keysToGet, (result) => {
+                    if (chrome.runtime.lastError) {
+                        console.warn('XSE: Error loading advanced filter states:', chrome.runtime.lastError.message);
+                        this.advancedFilterValues = this._getDefaultAdvancedFilterValues(); // 出错时使用默认值
+                        this.isAdvancedFiltersExpanded = false; // 默认不展开
+                    } else {
+                        this.isAdvancedFiltersExpanded = !!result[ADVANCED_FILTER_STORAGE_KEYS.EXPANDED];
+                        // 加载各个筛选条件的值，如果存储中没有，则使用默认值
+                        for (const key in this.advancedFilterValues) {
+                            if (result.hasOwnProperty(key)) {
+                                this.advancedFilterValues[key] = result[key];
+                            } else {
+                                // 如果某个键在存储中不存在，则使用默认对象中的值
+                                this.advancedFilterValues[key] = this._getDefaultAdvancedFilterValues()[key];
+                            }
+                        }
+                    }
+                    // console.log("XSE: Loaded advanced filter states:", this.isAdvancedFiltersExpanded, this.advancedFilterValues);
+                    resolve();
+                });
+            } else {
+                console.warn('XSE: Context invalidated before loading advanced filter states.');
+                this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
+                this.isAdvancedFiltersExpanded = false;
+                resolve();
+            }
+        });
+    }
+
+    async _saveAdvancedFilterStates() {
+        if (!this.panel) return; // 仅当面板存在时（即UI元素已创建）才尝试读取和保存
+
+        // 从UI元素更新 this.advancedFilterValues
+        // 注意: from_user 的值在隐藏时不应该从UI读取，而应保留其在 this.advancedFilterValues 中的值
+        const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
+        const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
+        if (fromUserContainer && fromUserContainer.style.display !== 'none' && fromUserInput) { // 仅当可见时更新
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
+        }
+        // 对于其他控件，可以直接从UI读取，因为它们总是可见（在高级筛选区域展开时）
+        const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
+        if (sinceDateInput) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE] = sinceDateInput.value;
+        
+        const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
+        if (untilDateInput) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE] = untilDateInput.value;
+
+        const verifiedCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID}`);
+        if (verifiedCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED] = verifiedCheckbox.checked;
+        
+        const imagesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID}`);
+        if (imagesCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES] = imagesCheckbox.checked;
+
+        const videosCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID}`);
+        if (videosCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS] = videosCheckbox.checked;
+
+        const linksCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID}`);
+        if (linksCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS] = linksCheckbox.checked;
+        
+        const langSelect = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID}`);
+        if (langSelect) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] = langSelect.value;
+
+        const excludeRepliesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID}`);
+        if (excludeRepliesCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES] = excludeRepliesCheckbox.checked;
+
+        return new Promise((resolve) => {
+            if (chrome.runtime && chrome.runtime.id) {
+                const statesToSave = {
+                    [ADVANCED_FILTER_STORAGE_KEYS.EXPANDED]: this.isAdvancedFiltersExpanded,
+                    ...this.advancedFilterValues
+                };
+                // console.log("XSE: Saving advanced filter states:", statesToSave);
+                chrome.storage.local.set(statesToSave, () => {
+                    if (chrome.runtime.lastError) {
+                        console.warn('XSE: Error saving advanced filter states:', chrome.runtime.lastError.message);
+                    }
+                    resolve();
+                });
+            } else {
+                console.warn('XSE: Context invalidated before saving advanced filter states.');
+                resolve();
+            }
+        });
+    }
+    
+    // --- 更新：应用加载的筛选状态到UI ---
+    _applyAdvancedFilterStatesToUI() {
+        if (!this.panel) return;
+
+        // 应用展开/收起状态
+        const toggleBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID}`);
+        const filtersArea = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID}`);
+        if (toggleBtn && filtersArea) {
+            if (this.isAdvancedFiltersExpanded) {
+                filtersArea.classList.add('xse-expanded');
+                filtersArea.classList.remove('xse-hidden'); // 确保移除隐藏类
+                toggleBtn.textContent = '高级筛选 ▲';
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                // filtersArea.style.display = 'none';
+                filtersArea.classList.remove('xse-expanded');
+                // filtersArea.classList.add('xse-hidden'); // 初始隐藏由CSS的max-height:0 opacity:0处理
+                toggleBtn.textContent = '高级筛选 ▼';
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        // 应用各个筛选条件的值
+        const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
+        if (fromUserInput) fromUserInput.value = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] || '';
+        
+        const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
+        if (sinceDateInput) sinceDateInput.value = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE] || '';
+
+        const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
+        if (untilDateInput) untilDateInput.value = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE] || '';
+
+        const verifiedCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID}`);
+        if (verifiedCheckbox) verifiedCheckbox.checked = !!this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED];
+        
+        const imagesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID}`);
+        if (imagesCheckbox) imagesCheckbox.checked = !!this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES];
+
+        const videosCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID}`);
+        if (videosCheckbox) videosCheckbox.checked = !!this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS];
+
+        const linksCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID}`);
+        if (linksCheckbox) linksCheckbox.checked = !!this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS];
+        
+        const langSelect = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID}`);
+        if (langSelect) langSelect.value = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] || '';
+
+        const excludeRepliesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID}`);
+        if (excludeRepliesCheckbox) excludeRepliesCheckbox.checked = !!this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES];
+
+        // 加载完值后，立即更新 from:user 区域的显隐
+        this.updateAdvancedFiltersUI();
+        // 加载完值后，也进行一次日期校验
+        this._validateDates();
     }
 
     async loadSpecialUsers() {
@@ -536,43 +912,86 @@ class XSearchEnhancer {
     createPanel() {
       if (document.getElementById(DOM_SELECTORS.PANEL.ID)) {
         this.panel = document.getElementById(DOM_SELECTORS.PANEL.ID);
+        // 如果面板已存在，确保应用存储的状态
+        this._applyAdvancedFilterStatesToUI(); 
         // 如果面板已存在，可能需要刷新其内容，但状态管理不在这里做
-        this.updatePanelUserList();
+        this.updatePanelUserList(); // 会间接调用 updateAdvancedFiltersUI
         return;
       }
 
       const panelContainer = document.createElement('div');
       panelContainer.id = DOM_SELECTORS.PANEL.ID;
 
-      panelContainer.innerHTML = `
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
-            <h2>X 搜索增强</h2>
-            <button id="${DOM_SELECTORS.PANEL.CLOSE_BUTTON.substring(1)}">×</button>
-          </div>
-          <div style="margin-bottom: 28px;">
-            <div class="search-input-container">
-              <div class="search-icon">🔍</div>
-              <input type="text" id="${DOM_SELECTORS.PANEL.SEARCH_INPUT.substring(1)}" placeholder="搜索关键词...">
-            </div>
-          </div>
-          <div style="margin-bottom: 28px;">
-            <h3>
-              特别关注
-              <div class="user-count-badge">${this.specialUsers.length}</div>
-            </h3>
-            <div id="${DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1)}">
-            </div>
-          </div>
-          <button id="${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}">开始搜索</button>
-        </div>
-      `;
+      const panelContent = document.createElement('div');
+      // 样式直接在 content_styles.css 中通过 #x-search-enhancer-panel > div 控制
+      panelContent.style.padding = '32px'; // 保留这些基础布局，CSS中可覆盖
+      panelContent.style.overflowY = 'auto';
+      panelContent.style.maxHeight = 'calc(100vh - 80px)';
 
+      // 1. 标题和关闭按钮
+      const headerDiv = document.createElement('div');
+      // 样式直接在 content_styles.css 中通过 #x-search-enhancer-panel h2 和 #close-panel 控制
+      Object.assign(headerDiv.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' });
+      const title = document.createElement('h2');
+      title.textContent = 'X 搜索增强';
+      headerDiv.appendChild(title);
+      headerDiv.appendChild(this._createButton(DOM_SELECTORS.PANEL.CLOSE_BUTTON.substring(1), '×'));
+      panelContent.appendChild(headerDiv);
+
+      // 2. 搜索关键词输入区域
+      const searchInputMainContainer = document.createElement('div');
+      searchInputMainContainer.style.marginBottom = '28px';
+      const searchInputContainer = document.createElement('div');
+      searchInputContainer.className = 'search-input-container';
+      const searchIcon = document.createElement('div');
+      searchIcon.className = 'search-icon';
+      searchIcon.innerHTML = '🔍';
+      searchInputContainer.appendChild(searchIcon);
+      const searchKeywordsInput = document.createElement('input');
+      searchKeywordsInput.type = 'text';
+      searchKeywordsInput.id = DOM_SELECTORS.PANEL.SEARCH_INPUT.substring(1);
+      searchKeywordsInput.placeholder = '搜索关键词...';
+      searchInputContainer.appendChild(searchKeywordsInput);
+      searchInputMainContainer.appendChild(searchInputContainer);
+      panelContent.appendChild(searchInputMainContainer);
+
+      // 3. 高级筛选切换按钮
+      const toggleAdvancedFiltersBtn = this._createButton(
+          DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID,
+          '高级筛选 ▼'
+      );
+      toggleAdvancedFiltersBtn.setAttribute('aria-expanded', 'false');
+      toggleAdvancedFiltersBtn.setAttribute('aria-controls', DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID);
+      panelContent.appendChild(toggleAdvancedFiltersBtn);
+
+      // 4. 高级筛选区域 (通过新方法渲染)
+      const advancedFiltersArea = this._renderAdvancedFiltersArea();
+      panelContent.appendChild(advancedFiltersArea);
+
+      // 5. 特别关注区域
+      const specialUsersMainContainer = document.createElement('div');
+      specialUsersMainContainer.style.marginBottom = '28px';
+      const specialUsersHeader = document.createElement('h3');
+      specialUsersHeader.innerHTML = `特别关注 <div class="${DOM_SELECTORS.PANEL.USER_COUNT_BADGE.substring(1)}">${this.specialUsers.length}</div>`;
+      specialUsersMainContainer.appendChild(specialUsersHeader);
+      const specialUsersListContainer = document.createElement('div');
+      specialUsersListContainer.id = DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1);
+      specialUsersMainContainer.appendChild(specialUsersListContainer);
+      panelContent.appendChild(specialUsersMainContainer);
+
+      // 6. 执行搜索按钮
+      panelContent.appendChild(this._createButton(
+          DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1), 
+          '开始搜索'
+      ));
+
+      panelContainer.appendChild(panelContent);
       document.body.appendChild(panelContainer);
       this.panel = panelContainer;
 
       this.bindPanelEvents();
-      this.updatePanelUserList();
+      this._applyAdvancedFilterStatesToUI(); // 应用加载的或默认的状态到 UI
+      this.updatePanelUserList(); // 更新特别关注列表，这也会调用 updateAdvancedFiltersUI
     }
 
     bindPanelEvents() {
@@ -599,6 +1018,124 @@ class XSearchEnhancer {
             }
           });
       }
+
+      // 高级筛选切换按钮事件
+      const toggleAdvancedBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID}`);
+      if (toggleAdvancedBtn) {
+        toggleAdvancedBtn.addEventListener('click', () => {
+            const filtersArea = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID}`);
+            if (filtersArea) {
+                // const newState = filtersArea.style.display === 'none';
+                // filtersArea.style.display = newState ? 'block' : 'none'; 
+                const newState = !filtersArea.classList.contains('xse-expanded');
+                if (newState) {
+                    filtersArea.classList.add('xse-expanded');
+                    filtersArea.classList.remove('xse-hidden'); // 确保移除，尽管CSS可能已处理
+                } else {
+                    filtersArea.classList.remove('xse-expanded');
+                }
+                toggleAdvancedBtn.textContent = newState ? '高级筛选 ▲' : '高级筛选 ▼';
+                toggleAdvancedBtn.setAttribute('aria-expanded', String(newState));
+                this.isAdvancedFiltersExpanded = newState;
+                this._saveAdvancedFilterStates(); 
+            }
+        });
+      }
+
+      // “清除筛选”按钮事件
+      const clearFiltersBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.CLEAR_FILTERS_BTN_ID}`);
+      if (clearFiltersBtn) {
+          clearFiltersBtn.addEventListener('click', () => {
+              // 重置 this.advancedFilterValues 为默认值
+              this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
+              // 将这些默认值应用回 UI 控件
+              this._applyAdvancedFilterStatesToUI(); // 这会更新UI并调用 updateAdvancedFiltersUI
+              // 保存重置后的状态
+              this._saveAdvancedFilterStates();
+          });
+      }
+
+      // 日期校验事件绑定
+      const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
+      const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
+      if (sinceDateInput) {
+          sinceDateInput.addEventListener('change', () => {
+              this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE] = sinceDateInput.value;
+              this._validateDates();
+              this._saveAdvancedFilterStates();
+          });
+      }
+      if (untilDateInput) {
+          untilDateInput.addEventListener('change', () => {
+              this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE] = untilDateInput.value;
+              this._validateDates();
+              this._saveAdvancedFilterStates();
+          });
+      }
+
+      // 其他筛选条件值改变时保存状态
+      const filterInputsToWatch = [
+          // from_user 在 updateAdvancedFiltersUI 中处理显隐，其值在 _saveAdvancedFilterStates 中根据可见性读取
+          // DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID, // input event
+          DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID, // change event
+          DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID,   // change event
+          DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID,  // change event
+          DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID,    // change event
+          DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID,         // change event
+          DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID // change event
+      ];
+
+      filterInputsToWatch.forEach(inputId => {
+          const inputElement = this.panel.querySelector(`#${inputId}`);
+          if (inputElement) {
+              const eventType = inputElement.type === 'checkbox' || inputElement.tagName === 'SELECT' ? 'change' : 'input';
+              inputElement.addEventListener(eventType, () => {
+                  // _saveAdvancedFilterStates 会从UI读取当前值并保存
+                  this._saveAdvancedFilterStates();
+              });
+          }
+      });
+      // from:username 的 input 事件单独处理，因为它可能被隐藏
+      const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
+      if(fromUserInput) {
+          fromUserInput.addEventListener('input', () => {
+              // 只有当它可见时，它的值变化才触发保存
+              const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
+              if(fromUserContainer && fromUserContainer.style.display !== 'none') {
+                this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
+                this._saveAdvancedFilterStates();
+              }
+          });
+      }
+    }
+
+    // --- 新增：日期校验方法 ---
+    _validateDates() {
+        if (!this.panel) return;
+        const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
+        const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
+        const errorMessageElement = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.DATE_ERROR_MESSAGE_ID}`);
+
+        if (!sinceDateInput || !untilDateInput || !errorMessageElement) return false;
+
+        const sinceDate = sinceDateInput.value;
+        const untilDate = untilDateInput.value;
+
+        // errorMessageElement.style.display = 'none'; // 默认隐藏错误信息
+        errorMessageElement.classList.add('xse-hidden');
+        let isValid = true;
+
+        if (sinceDate && untilDate) {
+            const dSince = new Date(sinceDate);
+            const dUntil = new Date(untilDate);
+            if (dSince > dUntil) {
+                errorMessageElement.textContent = '开始日期不能晚于结束日期。';
+                // errorMessageElement.style.display = 'block';
+                errorMessageElement.classList.remove('xse-hidden');
+                isValid = false;
+            }
+        }
+        return isValid;
     }
 
     updatePanelUserList() {
@@ -651,7 +1188,10 @@ class XSearchEnhancer {
           const username = e.target.dataset.username;
           this.specialUsers = this.specialUsers.filter(user => user.username !== username);
           await this.saveSpecialUsers();
+          // 递归调用以刷新列表和计数器
           this.updatePanelUserList();
+
+          // TODO: updateAdvancedFiltersUI 会在 updatePanelUserList 结束时被调用
 
           if (this.currentUsername === username) {
             const profileButton = document.querySelector('.x-search-enhancer-follow-btn');
@@ -662,8 +1202,13 @@ class XSearchEnhancer {
           }
         });
       });
+
+      if (typeof this.updateAdvancedFiltersUI === 'function') {
+        this.updateAdvancedFiltersUI();
+      }
     }
 
+    // --- 更新：executeSearch 以整合高级筛选 ---
     executeSearch() {
       if (!this.panel) return;
       const keywordsInput = this.panel.querySelector(DOM_SELECTORS.PANEL.SEARCH_INPUT);
@@ -679,16 +1224,84 @@ class XSearchEnhancer {
         return;
       }
 
-      let searchQuery = keywords;
+      let queryParts = [];
+      // 1. 添加关键词
+      queryParts.push(keywords);
+
+      // 2. 添加“特别关注”用户 (如果激活)
       if (this.specialUsers.length > 0) {
         const usernames = this.specialUsers.map(user => `from:${user.username}`).join(' OR ');
-        searchQuery = `(${usernames}) ${keywords}`;
+        queryParts.push(`(${usernames})`);
+      } else {
+        // 仅当“特别关注”未激活且 from:user 可见且有值时，才使用高级筛选的 from:user
+        const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
+        const fromUserInputVal = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER];
+        if (fromUserContainer && fromUserContainer.style.display !== 'none' && fromUserInputVal) {
+            queryParts.push(`from:${fromUserInputVal}`);
+        }
       }
 
-      const encodedQuery = encodeURIComponent(searchQuery);
+      // 3. 添加其他高级筛选条件
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]) {
+        queryParts.push(`since:${this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]}`);
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]) {
+        queryParts.push(`until:${this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]}`);
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]) {
+        queryParts.push('filter:verified');
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES]) {
+        queryParts.push('filter:images');
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS]) {
+        queryParts.push('filter:videos');
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS]) {
+        queryParts.push('filter:links');
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE]) {
+        queryParts.push(`lang:${this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE]}`);
+      }
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]) {
+        queryParts.push('-filter:replies');
+      }
+
+      const finalSearchQuery = queryParts.join(' ').trim();
+
+      if (!finalSearchQuery) {
+        if(keywordsInput) keywordsInput.placeholder = "请输入关键词或使用高级筛选";
+        console.log("XSE: No search query to execute.");
+        // 可以在这里给用户一些提示，比如面板内显示消息
+        const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
+        if (searchBtn) {
+            searchBtn.textContent = '请输入搜索内容';
+            setTimeout(() => {
+                if(this.panel) searchBtn.textContent = '开始搜索';
+            }, 2000);
+        }
+        return;
+      }
+
+      // 日期校验
+      if (!this._validateDates()) {
+        console.log("XSE: Invalid date range. Search aborted.");
+        // 可以在面板中给出更明显的提示
+        const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
+         if (searchBtn) {
+            searchBtn.textContent = '日期范围无效';
+            setTimeout(() => {
+               if(this.panel) searchBtn.textContent = '开始搜索';
+            }, 2000);
+        }
+        return;
+      }
+
+      const encodedQuery = encodeURIComponent(finalSearchQuery);
       const searchUrl = `https://x.com/search?q=${encodedQuery}&src=typed_query`;
 
-      const searchBtn = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
+      //   const searchBtn = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
+      const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
       if (searchBtn) {
           searchBtn.innerHTML = '搜索中...';
           searchBtn.style.opacity = '0.7';
@@ -709,6 +1322,34 @@ class XSearchEnhancer {
           }
         }, 290);
       }
+    }
+
+    updateAdvancedFiltersUI() {
+        if (!this.panel) return;
+        // console.log("XSE: updateAdvancedFiltersUI called. Special users count:", this.specialUsers.length);
+        
+        const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
+        const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
+
+        if (!fromUserContainer || !fromUserInput) {
+            // console.warn("XSE: From user container or input not found in updateAdvancedFiltersUI.");
+            return;
+        }
+
+        if (this.specialUsers.length > 0) {
+            // fromUserContainer.style.display = 'none';
+            fromUserContainer.classList.add('xse-hidden');
+            // 当隐藏时，我们不应该清除 this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER]
+            // 因为用户可能在“特别关注”列表为空时输入了内容，我们希望保留它。
+            // executeSearch 会根据容器的可见性来决定是否使用 from:user。
+            // UI上的输入框值可以保持不变，或者如果需要，可以临时清空UI上的值，但不影响存储的 this.advancedFilterValues.FROM_USER
+            // fromUserInput.value = ''; // 仅清空UI显示，不改变 this.advancedFilterValues.FROM_USER
+        } else {
+            // fromUserContainer.style.display = 'block'; 
+            fromUserContainer.classList.remove('xse-hidden');
+            // 当重新显示时，从 this.advancedFilterValues 恢复其值到UI
+            fromUserInput.value = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] || '';
+        }
     }
   }
 
