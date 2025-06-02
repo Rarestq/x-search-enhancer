@@ -73,6 +73,23 @@
 - ✅ **实时同步**: 数据实时保存和同步
 - ✅ **SPA 兼容**: 支持 X 的单页应用路由变化
 - ✅ **性能优化**: 最小化资源占用和DOM操作
+- ✅ **样式分离**: CSS 与 JavaScript 完全分离，便于维护和自定义
+
+## 架构设计
+
+### 🎨 样式架构
+- **模块化设计**: 每个组件都有独立的样式类
+- **主题支持**: 支持明暗主题切换
+- **CSS变量**: 使用CSS自定义属性，便于主题定制
+- **响应式布局**: 适配不同屏幕尺寸和设备
+- **动画效果**: 流畅的过渡动画提升用户体验
+
+### 📁 组件结构
+- **Panel Components**: 搜索面板相关组件
+- **Button Components**: 星标按钮和操作按钮
+- **Badge Components**: 用户标识徽章
+- **Form Components**: 搜索表单和输入框
+- **List Components**: 用户列表和搜索结果
 
 ## 文件结构
 
@@ -81,7 +98,7 @@ x-search-enhancer/
 ├── manifest.json           # 插件配置文件
 ├── service_worker.js       # 后台脚本 (Manifest V3)
 ├── content_script.js       # 内容脚本 (主要逻辑)
-├── content_styles.css      # 内容脚本样式
+├── content_styles.css      # 内容脚本样式文件
 ├── icons/                  # 插件图标文件夹
 │   ├── icon16.png
 │   ├── icon32.png
@@ -89,6 +106,27 @@ x-search-enhancer/
 │   └── icon128.png
 └── README.md              # 说明文档
 ```
+
+## 样式定制
+
+### 🎯 自定义主题
+插件支持通过修改 `content_styles.css` 文件来自定义主题：
+
+```css
+:root {
+  --primary-color: #007AFF;
+  --background-color: rgba(255, 255, 255, 0.95);
+  --text-color: #1d1d1f;
+  --border-radius: 12px;
+  /* 更多变量... */
+}
+```
+
+### 🌈 预设主题
+- **Apple Design**: 默认主题，采用苹果设计语言
+- **Dark Mode**: 深色模式支持
+- **Minimal**: 简约风格主题
+- **Colorful**: 多彩主题
 
 ## 注意事项
 
@@ -106,6 +144,11 @@ x-search-enhancer/
    - 所有数据存储在本地浏览器中
    - 不会上传任何用户数据到外部服务器
 
+4. **样式兼容**:
+   - CSS样式与JavaScript逻辑完全分离
+   - 支持CSS变量自定义主题
+   - 兼容不同浏览器的CSS特性
+
 ## 故障排除
 
 ### 插件图标显示感叹号
@@ -120,7 +163,19 @@ x-search-enhancer/
 - 确保已添加特别关注用户
 - 刷新搜索结果页面
 
+### 样式显示异常
+- 检查 `content_styles.css` 文件是否正确加载
+- 清除浏览器缓存后重试
+- 确保浏览器支持CSS自定义属性
+
 ## 更新日志
+
+### v1.1.0 (最新)
+- 🎨 **样式架构重构**: CSS与JavaScript完全分离
+- 🌈 **主题系统**: 支持自定义主题和CSS变量
+- 📱 **响应式优化**: 更好的移动端体验
+- ⚡ **性能提升**: 减少内联样式，提高渲染性能
+- 🛠️ **维护性提升**: 模块化代码结构，便于维护
 
 ### v1.0.0
 - 初始版本发布
@@ -137,8 +192,18 @@ x-search-enhancer/
 - Manifest V3 WebExtensions API
 - CSS3 动画和响应式设计
 - Chrome Storage API
+- CSS自定义属性 (CSS Variables)
 
 ### 开发环境
 - 支持 Chrome 88+、Edge 88+、Firefox 89+
 - 使用现代 JavaScript 特性
 - 遵循 Web 标准和最佳实践
+- CSS-in-JS 分离架构
+
+### 贡献指南
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 发起 Pull Request
+
+欢迎贡献代码、报告问题或提出改进建议！
