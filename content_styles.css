@@ -6,9 +6,9 @@
     --secondary-purple: #5856D6;
     --text-primary: #1D1D1F;
     --text-secondary: #8E8E93;
-    --background-primary: rgba(255, 255, 255, 0.95);
-    --background-secondary: rgba(118, 118, 128, 0.08);
-    --background-tertiary: rgba(118, 118, 128, 0.06);
+    --background-primary: rgba(255, 255, 255, 0.95); /* 面板主背景 */
+    --background-secondary: rgba(118, 118, 128, 0.08); /* 输入框等次级背景 */
+    --background-tertiary: rgba(118, 118, 128, 0.06); /* 用户列表等三级背景 */
     --border-color: rgba(118, 118, 128, 0.08);
     --shadow-light: 0 8px 20px rgba(0, 0, 0, 0.04);
     --shadow-medium: 0 16px 40px rgba(0, 0, 0, 0.08);
@@ -38,6 +38,7 @@
   }
   
   /* 主面板样式 */
+  /* 对于主面板的核心定位和视觉属性，!important 可能是必要的，以确保其在X.com页面上的正确显示和层级 */
   #x-search-enhancer-panel {
     position: fixed !important;
     top: 20px !important;
@@ -48,451 +49,446 @@
     backdrop-filter: blur(40px) !important;
     -webkit-backdrop-filter: blur(40px) !important;
     border-radius: var(--radius-xl) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important; /* 毛玻璃效果的边框 */
     box-shadow: var(--shadow-heavy), 0 0 0 0.5px rgba(255, 255, 255, 0.3) !important;
-    z-index: 10000 !important;
+    z-index: 2147483647 !important; /* 尝试使用一个非常高的z-index值 */
     overflow: hidden !important;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif !important;
-    animation: slideInPanel var(--transition-slow) !important;
-    font-feature-settings: "kern" 1, "liga" 1 !important;
-    -webkit-font-smoothing: antialiased !important;
-    -moz-osx-font-smoothing: grayscale !important;
+    animation: slideInPanel var(--transition-slow); /* !important 移除，动画通常不需要 */
+    font-feature-settings: "kern" 1, "liga" 1; /* !important 移除 */
+    -webkit-font-smoothing: antialiased; /* !important 移除 */
+    -moz-osx-font-smoothing: grayscale; /* !important 移除 */
+    pointer-events: auto !important; /* 确保面板可交互 */
   }
   
   /* 面板内容容器 */
   #x-search-enhancer-panel > div {
-    padding: 32px !important;
-    overflow-y: auto !important;
-    max-height: calc(100vh - 80px) !important;
+    padding: 32px; /* !important 移除，ID选择器特异性足够 */
+    overflow-y: auto; /* !important 移除 */
+    max-height: calc(100vh - 80px); /* !important 移除 */
   }
   
   /* 面板标题区域 */
   #x-search-enhancer-panel h2 {
-    margin: 0 !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    color: var(--text-primary) !important;
-    letter-spacing: -0.6px !important;
-    line-height: 1.2 !important;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.6px;
+    line-height: 1.2;
+    /* 以上均移除 !important，因为 #x-search-enhancer-panel h2 特异性较高 */
   }
   
   /* 关闭按钮 */
   #x-search-enhancer-panel #close-panel {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 50% !important;
-    background: var(--background-secondary) !important;
-    border: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    font-size: 18px !important;
-    color: var(--text-secondary) !important;
-    transition: all var(--transition-fast) !important;
-    font-weight: 300 !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--background-secondary);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer !important; /* cursor 保持 !important，以防被X.com覆盖 */
+    font-size: 18px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    font-weight: 300; /* 调整字体粗细使 "×" 更纤细 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    /* 以上大部分移除 !important */
   }
   
   #x-search-enhancer-panel #close-panel:hover {
-    background: rgba(120, 120, 128, 0.2) !important;
-    transform: scale(1.05) !important;
-    color: var(--text-primary) !important;
+    background: rgba(120, 120, 128, 0.2); /* !important 移除 */
+    transform: scale(1.05); /* !important 移除 */
+    color: var(--text-primary); /* !important 移除 */
   }
   
   #x-search-enhancer-panel #close-panel:active {
-    transform: scale(0.95) !important;
+    transform: scale(0.95); /* !important 移除 */
   }
   
   /* 搜索输入框容器 */
   #x-search-enhancer-panel .search-input-container {
-    position: relative !important;
-    margin-bottom: 32px !important;
+    position: relative; /* !important 移除 */
+    margin-bottom: 32px; /* !important 移除 */
   }
   
   /* 搜索图标 */
   #x-search-enhancer-panel .search-icon {
-    position: absolute !important;
-    left: 18px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    color: var(--text-secondary) !important;
-    font-size: 16px !important;
-    pointer-events: none !important;
-    opacity: 0.8 !important;
-    transition: all var(--transition-fast) !important;
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 16px;
+    pointer-events: none; /* !important 移除，通常不需要 */
+    opacity: 0.8;
+    transition: all var(--transition-fast);
+    /* 以上均移除 !important */
   }
   
   /* 搜索输入框 */
   #x-search-enhancer-panel #search-keywords {
-    width: 100% !important;
-    padding: 18px 18px 18px 48px !important;
-    border: 1px solid transparent !important;
-    border-radius: var(--radius-medium) !important;
-    font-size: 16px !important;
-    font-weight: 400 !important;
-    background: var(--background-secondary) !important;
-    color: var(--text-primary) !important;
-    outline: none !important;
-    transition: all var(--transition-medium) !important;
-    font-family: inherit !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
+    width: 100%; /* !important 移除 */
+    padding: 18px 18px 18px 48px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-medium);
+    font-size: 16px;
+    font-weight: 400;
+    background: var(--background-secondary);
+    color: var(--text-primary);
+    outline: none !important; /* outline 通常需要 !important 来强制移除浏览器默认样式 */
+    transition: all var(--transition-medium);
+    font-family: inherit; /* !important 移除 */
+    -webkit-appearance: none; /* !important 移除 */
+    appearance: none; /* !important 移除 */
+    /* 以上大部分移除 !important */
   }
   
   #x-search-enhancer-panel #search-keywords::placeholder {
-    color: var(--text-secondary) !important;
-    opacity: 0.8 !important;
+    color: var(--text-secondary); /* !important 移除 */
+    opacity: 0.8; /* !important 移除 */
   }
   
   #x-search-enhancer-panel #search-keywords:focus {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border-color: var(--primary-blue) !important;
-    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1) !important;
-    transform: scale(1.01) !important;
+    background: rgba(255, 255, 255, 0.9); /* !important 移除 */
+    border-color: var(--primary-blue) !important; /* 焦点状态的边框颜色可能需要 !important */
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1); /* !important 移除 */
+    transform: scale(1.01); /* !important 移除 */
   }
   
   #x-search-enhancer-panel #search-keywords:focus + .search-icon {
-    color: var(--primary-blue) !important;
-    opacity: 1 !important;
+    color: var(--primary-blue); /* !important 移除 */
+    opacity: 1; /* !important 移除 */
   }
   
   /* 特别关注区域标题 */
   #x-search-enhancer-panel h3 {
-    margin: 0 0 20px 0 !important;
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    color: var(--text-primary) !important;
-    letter-spacing: -0.4px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* 以上均移除 !important */
   }
   
   /* 用户数量徽章 */
   #x-search-enhancer-panel .user-count-badge {
-    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%) !important;
-    color: white !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    padding: 6px 10px !important;
-    border-radius: var(--radius-small) !important;
-    letter-spacing: 0.3px !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2) !important;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius-small);
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+    /* 以上均移除 !important */
   }
   
   /* 特别关注用户容器 */
   #x-search-enhancer-panel #special-users-container {
-    max-height: 280px !important;
-    overflow-y: auto !important;
-    border-radius: var(--radius-large) !important;
-    background: var(--background-tertiary) !important;
-    border: 1px solid var(--border-color) !important;
-    margin-bottom: 32px !important;
-    transition: all var(--transition-fast) !important;
+    max-height: 280px;
+    overflow-y: auto;
+    border-radius: var(--radius-large);
+    background: var(--background-tertiary);
+    border: 1px solid var(--border-color);
+    margin-bottom: 32px;
+    transition: all var(--transition-fast);
+    /* 以上均移除 !important */
   }
   
   /* 空状态样式 */
   #x-search-enhancer-panel .empty-state {
-    padding: 32px 24px !important;
-    text-align: center !important;
-    color: var(--text-secondary) !important;
-    font-size: 15px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 12px !important;
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    /* 以上均移除 !important */
   }
   
   #x-search-enhancer-panel .empty-state-icon {
-    font-size: 32px !important;
-    opacity: 0.4 !important;
-    margin-bottom: 4px !important;
+    font-size: 32px;
+    opacity: 0.4;
+    margin-bottom: 4px;
+    /* 以上均移除 !important */
   }
   
   #x-search-enhancer-panel .empty-state-subtitle {
-    font-size: 13px !important;
-    opacity: 0.7 !important;
-    margin-top: 4px !important;
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 4px;
+    /* 以上均移除 !important */
   }
   
   /* 用户列表项 */
   #x-search-enhancer-panel .special-user-item {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 18px 24px !important;
-    cursor: pointer !important;
-    transition: all var(--transition-fast) !important;
-    position: relative !important;
-    border-bottom: 1px solid var(--border-color) !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    cursor: pointer !important; /* cursor 保持 !important */
+    transition: all var(--transition-fast);
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+    /* 以上大部分移除 !important */
   }
   
   #x-search-enhancer-panel .special-user-item:last-child {
-    border-bottom: none !important;
+    border-bottom: none !important; /* 覆盖上面的 border-bottom，保持 !important */
   }
   
   #x-search-enhancer-panel .special-user-item:hover {
-    background: var(--background-secondary) !important;
-    transform: translateX(2px) !important;
+    background: var(--background-secondary); /* !important 移除 */
+    transform: translateX(2px); /* !important 移除 */
   }
   
   #x-search-enhancer-panel .special-user-item:active {
-    transform: translateX(0) scale(0.98) !important;
+    transform: translateX(0) scale(0.98); /* !important 移除 */
   }
   
   /* 用户信息容器 */
   #x-search-enhancer-panel .user-info {
-    flex: 1 !important;
-    min-width: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 14px !important;
+    flex: 1;
+    min-width: 0; /* 防止内容溢出 */
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    /* 以上均移除 !important */
   }
   
   /* 用户状态指示器 */
   #x-search-enhancer-panel .user-indicator {
-    width: 10px !important;
-    height: 10px !important;
-    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%) !important;
-    border-radius: 50% !important;
-    flex-shrink: 0 !important;
-    box-shadow: 0 0 8px rgba(0, 122, 255, 0.3) !important;
-    animation: pulse 2s infinite ease-in-out !important;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%);
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(0, 122, 255, 0.3);
+    animation: pulse 2s infinite ease-in-out;
+    /* 以上均移除 !important */
   }
   
   /* 用户详情 */
   #x-search-enhancer-panel .user-details {
-    flex: 1 !important;
-    min-width: 0 !important;
+    flex: 1;
+    min-width: 0; /* 防止文本溢出 */
+    /* 以上均移除 !important */
   }
   
   #x-search-enhancer-panel .user-display-name {
-    font-weight: 500 !important;
-    color: var(--text-primary) !important;
-    font-size: 15px !important;
-    margin-bottom: 3px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    letter-spacing: -0.2px !important;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 15px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.2px;
+    /* 以上均移除 !important */
   }
   
   #x-search-enhancer-panel .user-username {
-    color: var(--text-secondary) !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-    letter-spacing: 0.1px !important;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.1px;
+    /* 以上均移除 !important */
   }
   
   /* 移除用户按钮 */
   #x-search-enhancer-panel .remove-user {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    background: rgba(255, 59, 48, 0.1) !important;
-    border: none !important;
-    color: #FF3B30 !important;
-    cursor: pointer !important;
-    font-size: 16px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all var(--transition-fast) !important;
-    font-weight: 300 !important;
-    opacity: 0.8 !important;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.1);
+    border: none;
+    color: #FF3B30;
+    cursor: pointer !important; /* cursor 保持 !important */
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    font-weight: 300;
+    opacity: 0.8;
+    /* 以上大部分移除 !important */
   }
   
   #x-search-enhancer-panel .remove-user:hover {
-    background: rgba(255, 59, 48, 0.2) !important;
-    transform: scale(1.1) !important;
-    opacity: 1 !important;
-    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2) !important;
+    background: rgba(255, 59, 48, 0.2); /* !important 移除 */
+    transform: scale(1.1); /* !important 移除 */
+    opacity: 1; /* !important 移除 */
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2); /* !important 移除 */
   }
   
   #x-search-enhancer-panel .remove-user:active {
-    transform: scale(0.95) !important;
+    transform: scale(0.95); /* !important 移除 */
   }
   
   /* 执行搜索按钮 */
   #x-search-enhancer-panel #execute-search {
-    width: 100% !important;
-    padding: 18px 24px !important;
-    background: linear-gradient(135deg, var(--primary-blue) 0%, #0051D5 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: var(--radius-medium) !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    transition: all var(--transition-medium) !important;
-    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.25) !important;
-    letter-spacing: 0.4px !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-    font-family: inherit !important;
+    width: 100%; /* !important 移除 */
+    padding: 18px 24px;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, #0051D5 100%);
+    color: white;
+    border: none;
+    border-radius: var(--radius-medium);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer !important; /* cursor 保持 !important */
+    transition: all var(--transition-medium);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.25);
+    letter-spacing: 0.4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-family: inherit; /* !important 移除 */
+    /* 以上大部分移除 !important */
   }
   
   #x-search-enhancer-panel #execute-search:hover {
-    transform: translateY(-2px) scale(1.02) !important;
-    box-shadow: 0 12px 32px rgba(0, 122, 255, 0.35) !important;
-    background: linear-gradient(135deg, #0066FF 0%, #0040CC 100%) !important;
+    transform: translateY(-2px) scale(1.02); /* !important 移除 */
+    box-shadow: 0 12px 32px rgba(0, 122, 255, 0.35); /* !important 移除 */
+    background: linear-gradient(135deg, #0066FF 0%, #0040CC 100%); /* !important 移除 */
   }
   
   #x-search-enhancer-panel #execute-search:active {
-    transform: translateY(0) scale(0.98) !important;
-    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2) !important;
+    transform: translateY(0) scale(0.98); /* !important 移除 */
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2); /* !important 移除 */
   }
   
-  /* 推文中的星标按钮 */
-  .x-search-enhancer-tweet-star {
-    margin-left: 8px !important;
-    background: none !important;
-    border: none !important;
-    font-size: 14px !important;
-    cursor: pointer !important;
-    color: var(--primary-blue) !important;
-    padding: 4px 6px !important;
-    border-radius: var(--radius-small) !important;
-    transition: all var(--transition-fast) !important;
-    opacity: 0.7 !important;
-  }
-  
-  .x-search-enhancer-tweet-star:hover {
-    background: rgba(0, 122, 255, 0.1) !important;
-    opacity: 1 !important;
-    transform: scale(1.1) !important;
-  }
-  
-  .x-search-enhancer-tweet-star:active {
-    transform: scale(0.95) !important;
-  }
-  
-  /* 用户主页的特别关注按钮 */
+  /* 用户主页的特别关注按钮 - 这些样式在页面上，可能需要 !important 来覆盖X.com的样式 */
   .x-search-enhancer-follow-btn {
-    display: inline-flex !important; /* 使用 inline-flex 更好地控制内部对齐 */
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    vertical-align: middle !important; /* 尝试垂直对齐 */
-    margin-left: 8px !important;    /* 与用户名的间距 */
-    padding: 4px !important;         /* 调整内边距，使其更紧凑 */
-    font-size: 18px !important;      /* 图标大小 (可以根据需要调整) */
-    line-height: 1 !important;       /* 确保行高不会导致按钮过高 */
-    color: var(--primary-blue) !important; /* 保持原有颜色 */
-    background: transparent !important; /* 透明背景 */
-    border: none !important;            /* 移除边框 */
-    border-radius: 50% !important; /* 可以尝试圆形按钮 */
+    vertical-align: middle !important;
+    margin-left: 8px !important;
+    padding: 4px !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    color: var(--primary-blue) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 50% !important; /* 圆形按钮 */
     cursor: pointer !important;
-    transition: all var(--transition-fast) !important; /* 保留过渡效果 */
-    /* opacity: 0.8 !important; */ /* 可以根据需要调整初始透明度 */
+    transition: all var(--transition-fast) !important;
+    position: relative !important; /* 如果需要tooltip或其它绝对定位子元素 */
   }
   
   .x-search-enhancer-follow-btn:hover {
-    background: rgba(0, 122, 255, 0.1) !important; /* 保留原有 hover 背景 */
-    transform: scale(1.15) !important; /* 保留原有 hover 缩放 */
-    /* opacity: 1 !important; */
-    /* box-shadow: 0 2px 8px rgba(0, 122, 255, 0.15) !important; */ /* 可以调整阴影 */
+    background: rgba(0, 122, 255, 0.1) !important;
+    transform: scale(1.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2) !important;
   }
   
   .x-search-enhancer-follow-btn:active {
-    transform: scale(0.95) !important; /* 保留原有 active 缩放 */
-    background: rgba(0, 122, 255, 0.05) !important; /* active 状态的细微背景变化 */
+    transform: scale(0.95) !important;
+    background: rgba(0, 122, 255, 0.05) !important;
   }
   
-  /* 搜索结果徽章 */
+  /* 搜索结果徽章 - 这些样式在页面上，可能需要 !important */
   .x-search-enhancer-badge {
     margin-left: 6px !important;
-    color: #FFD700 !important;
+    color: #FFD700 !important; /* 金色 */
     font-size: 12px !important;
     display: inline-block !important;
     animation: sparkle 3s infinite ease-in-out !important;
     filter: drop-shadow(0 1px 2px rgba(255, 215, 0, 0.3)) !important;
+    vertical-align: middle; /* 尝试对齐 */
   }
   
-  /* 滚动条样式 */
+  /* 滚动条样式 (面板内部) */
   #x-search-enhancer-panel::-webkit-scrollbar,
   #x-search-enhancer-panel *::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
+    width: 6px; /* !important 移除 */
+    height: 6px; /* !important 移除 */
   }
   
   #x-search-enhancer-panel::-webkit-scrollbar-track,
   #x-search-enhancer-panel *::-webkit-scrollbar-track {
-    background: transparent !important;
+    background: transparent; /* !important 移除 */
   }
   
   #x-search-enhancer-panel::-webkit-scrollbar-thumb,
   #x-search-enhancer-panel *::-webkit-scrollbar-thumb {
-    background: rgba(120, 120, 128, 0.3) !important;
-    border-radius: 3px !important;
-    transition: background var(--transition-fast) !important;
+    background: rgba(120, 120, 128, 0.3); /* !important 移除 */
+    border-radius: 3px; /* !important 移除 */
+    transition: background var(--transition-fast); /* !important 移除 */
   }
   
   #x-search-enhancer-panel::-webkit-scrollbar-thumb:hover,
   #x-search-enhancer-panel *::-webkit-scrollbar-thumb:hover {
-    background: rgba(120, 120, 128, 0.5) !important;
+    background: rgba(120, 120, 128, 0.5); /* !important 移除 */
   }
   
-  /* 动画定义 */
+  /* 动画定义 - 动画属性通常不需要 !important */
   @keyframes slideInPanel {
     from {
-      transform: translateX(100%) scale(0.9) !important;
-      opacity: 0 !important;
+      transform: translateX(100%) scale(0.9);
+      opacity: 0;
     }
     to {
-      transform: translateX(0) scale(1) !important;
-      opacity: 1 !important;
+      transform: translateX(0) scale(1);
+      opacity: 1;
     }
   }
   
   @keyframes slideOutPanel {
     from {
-      transform: translateX(0) scale(1) !important;
-      opacity: 1 !important;
+      transform: translateX(0) scale(1);
+      opacity: 1;
     }
     to {
-      transform: translateX(100%) scale(0.9) !important;
-      opacity: 0 !important;
+      transform: translateX(100%) scale(0.9);
+      opacity: 0;
     }
   }
   
   @keyframes sparkle {
     0%, 100% { 
-      opacity: 1 !important;
-      transform: scale(1) !important;
+      opacity: 1;
+      transform: scale(1);
     }
     50% { 
-      opacity: 0.6 !important;
-      transform: scale(1.1) !important;
+      opacity: 0.6;
+      transform: scale(1.1);
     }
   }
   
   @keyframes pulse {
     0%, 100% {
-      opacity: 1 !important;
-      transform: scale(1) !important;
+      opacity: 1;
+      transform: scale(1);
     }
     50% {
-      opacity: 0.7 !important;
-      transform: scale(1.05) !important;
+      opacity: 0.7;
+      transform: scale(1.05);
     }
   }
   
   @keyframes shake {
-    0%, 100% { transform: translateX(0) !important; }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px) !important; }
-    20%, 40%, 60%, 80% { transform: translateX(4px) !important; }
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
   }
   
-  /* 错误状态样式 */
+  /* 错误状态样式 (面板内部) */
   #x-search-enhancer-panel .error-state {
-    animation: shake 0.5s ease-in-out !important;
-    background: rgba(255, 59, 48, 0.1) !important;
-    border-color: rgba(255, 59, 48, 0.3) !important;
+    animation: shake 0.5s ease-in-out; /* !important 移除 */
+    background: rgba(255, 59, 48, 0.1); /* !important 移除 */
+    border-color: rgba(255, 59, 48, 0.3) !important; /* 错误状态边框颜色可能需要 !important */
   }
   
-  /* 响应式设计 */
+  /* 响应式设计 - 这里的 !important 可能是为了确保覆盖面板默认尺寸 */
   @media (max-width: 480px) {
     #x-search-enhancer-panel {
       width: calc(100vw - 20px) !important;
@@ -502,11 +498,11 @@
     }
     
     #x-search-enhancer-panel > div {
-      padding: 24px !important;
+      padding: 24px; /* !important 移除 */
     }
     
     #x-search-enhancer-panel h2 {
-      font-size: 20px !important;
+      font-size: 20px; /* !important 移除 */
     }
   }
   
@@ -517,11 +513,11 @@
     }
     
     #x-search-enhancer-panel #special-users-container {
-      max-height: 200px !important;
+      max-height: 200px; /* !important 移除 */
     }
   }
   
-  /* 高对比度模式支持 */
+  /* 高对比度模式支持 - 边框通常需要 !important 来确保可见性 */
   @media (prefers-contrast: high) {
     #x-search-enhancer-panel {
       border: 2px solid var(--text-primary) !important;
@@ -536,20 +532,13 @@
     }
   }
   
-  /* 减少动画模式支持 */
+  /* 减少动画模式支持 - 这里的 !important 是为了强制禁用动画 */
   @media (prefers-reduced-motion: reduce) {
     #x-search-enhancer-panel,
     #x-search-enhancer-panel *,
-    .x-search-enhancer-tweet-star,
-    .x-search-enhancer-follow-btn,
-    .x-search-enhancer-badge {
+    .x-search-enhancer-follow-btn, /* 包括页面注入的元素 */
+    .x-search-enhancer-badge {     /* 包括页面注入的元素 */
       animation: none !important;
       transition: none !important;
     }
-  }
-  
-  /* 确保面板在所有情况下都可见 */
-  #x-search-enhancer-panel {
-    z-index: 999999 !important;
-    pointer-events: auto !important;
   }
