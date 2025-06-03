@@ -46,53 +46,66 @@ const DOM_SELECTORS = {
     PRIMARY_COLUMN: 'div[data-testid="primaryColumn"]',
 
     PANEL: {
-        ID: 'x-search-enhancer-panel',
-        CLOSE_BUTTON: '#close-panel',
-        SEARCH_INPUT: '#search-keywords',
-        EXECUTE_SEARCH_BUTTON: '#execute-search',
-        SPECIAL_USERS_LIST_CONTAINER: '#special-users-list',
-        USER_COUNT_BADGE: '.user-count-badge',
-        EMPTY_STATE_CONTAINER: '#special-users-list .empty-state',
-        SPECIAL_USER_ITEM: '.special-user-item',
-        REMOVE_USER_BUTTON: '.remove-user',
+      ID: 'x-search-enhancer-panel',
+      CLOSE_BUTTON: '#close-panel',
+      SEARCH_INPUT: '#search-keywords',
+      EXECUTE_SEARCH_BUTTON: '#execute-search',
+      SPECIAL_USERS_LIST_CONTAINER: '#special-users-list', // Assuming this is the correct ID for the list itself
+      USER_COUNT_BADGE: '.user-count-badge', // Class for the badge
+      // EMPTY_STATE_CONTAINER: '#special-users-list .empty-state', // This would be dynamically generated, not a fixed ID
+      // SPECIAL_USER_ITEM: '.special-user-item', // Class for items
+      // REMOVE_USER_BUTTON: '.remove-user', // Class for remove buttons
 
-        // === Advance-filters-selectors ===
-        // 20250602 新增：高级筛选相关选择器
-        TOGGLE_ADVANCED_FILTERS_BTN_ID: 'xse-toggle-advanced-filters-btn',
-        ADVANCED_FILTERS_AREA_ID: 'xse-advanced-filters-area',
-        
-        FROM_USER_CONTAINER_ID: 'xse-from-user-container',
-        FROM_USER_INPUT_ID: 'xse-from-user',
-        
-        SINCE_DATE_INPUT_ID: 'xse-since-date',
-        UNTIL_DATE_INPUT_ID: 'xse-until-date',
-        DATE_ERROR_MESSAGE_ID: 'xse-date-error-message',
+      TOGGLE_ADVANCED_FILTERS_BTN_ID: 'xse-toggle-advanced-filters-btn',
+      ADVANCED_FILTERS_AREA_ID: 'xse-advanced-filters-area',
+      
+      FROM_USER_CONTAINER_ID: 'xse-from-user-container',
+      FROM_USER_INPUT_ID: 'xse-from-user',
+      
+      // REMOVE Date related IDs
+      // SINCE_DATE_INPUT_ID: 'xse-since-date',
+      // UNTIL_DATE_INPUT_ID: 'xse-until-date',
+      // DATE_ERROR_MESSAGE_ID: 'xse-date-error-message',
 
-        FILTER_VERIFIED_CHECKBOX_ID: 'xse-filter-verified',
-        FILTER_IMAGES_CHECKBOX_ID: 'xse-filter-images',
-        FILTER_VIDEOS_CHECKBOX_ID: 'xse-filter-videos',
-        FILTER_LINKS_CHECKBOX_ID: 'xse-filter-links',
+      // 20250603 ADD/MODIFY IDs for new filter buttons
+      FILTER_TODAY_BTN_ID: 'xse-filter-today-btn',
+      FILTER_VERIFIED_BTN_ID: 'xse-filter-verified-btn',
+      FILTER_IMAGES_BTN_ID: 'xse-filter-images-btn',
+      FILTER_VIDEOS_BTN_ID: 'xse-filter-videos-btn',
+      FILTER_LINKS_BTN_ID: 'xse-filter-links-btn',
+      EXCLUDE_REPLIES_BTN_ID: 'xse-filter-exclude-replies-btn',
 
-        LANG_CODE_SELECT_ID: 'xse-lang-code',
-        EXCLUDE_REPLIES_CHECKBOX_ID: 'xse-exclude-replies',
-
-        CLEAR_FILTERS_BTN_ID: 'xse-clear-filters-btn',
+      LANG_CODE_SELECT_ID: 'xse-lang-code',
+      CLEAR_FILTERS_BTN_ID: 'xse-clear-filters-btn',
     }
 };
 
 // === Advance-filters ===
-// 20250602 新增：高级筛选持久化存储键名
+// 高级筛选持久化存储键名
 const ADVANCED_FILTER_STORAGE_KEYS = {
-    EXPANDED: 'xseAdvancedFiltersExpanded',
-    FROM_USER: 'xseAdvancedFilterFromUser',
-    SINCE_DATE: 'xseAdvancedFilterSinceDate',
-    UNTIL_DATE: 'xseAdvancedFilterUntilDate',
-    FILTER_VERIFIED: 'xseAdvancedFilterVerified',
-    FILTER_IMAGES: 'xseAdvancedFilterImages',
-    FILTER_VIDEOS: 'xseAdvancedFilterVideos',
-    FILTER_LINKS: 'xseAdvancedFilterLinks',
-    LANG_CODE: 'xseAdvancedFilterLangCode',
-    EXCLUDE_REPLIES: 'xseAdvancedFilterExcludeReplies',
+  EXPANDED: 'xseAdvancedFiltersExpanded',
+  FROM_USER: 'xseAdvancedFilterFromUser',
+  // REMOVE Date related keys
+  // SINCE_DATE: 'xseAdvancedFilterSinceDate',
+  // UNTIL_DATE: 'xseAdvancedFilterUntilDate',
+  // ADD key for "Today" filter
+  FILTER_TODAY: 'xseAdvancedFilterToday',
+  FILTER_VERIFIED: 'xseAdvancedFilterVerified',
+  FILTER_IMAGES: 'xseAdvancedFilterImages',
+  FILTER_VIDEOS: 'xseAdvancedFilterVideos',
+  FILTER_LINKS: 'xseAdvancedFilterLinks',
+  LANG_CODE: 'xseAdvancedFilterLangCode',
+  EXCLUDE_REPLIES: 'xseAdvancedFilterExcludeReplies',
+};
+
+// TODO：Placeholder for SVG icons - in a real scenario, these would be actual SVG strings or loaded from files.
+const ICONS = {
+  TODAY: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM5 8V6h14v2H5z"/></svg>', // Example: Material 'event' icon
+  VERIFIED: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>', // Example: Material 'verified' icon
+  IMAGES: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>', // Example: Material 'image' icon
+  VIDEOS: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>', // Example: Material 'videocam' icon
+  LINKS: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>', // Example: Material 'link' icon
+  EXCLUDE_REPLIES: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>', // Example: Material 'speaker_notes_off' (concept)
 };
 
 /**
@@ -158,25 +171,24 @@ class XSearchEnhancer {
       this.currentUsername = null;
       this.isPanelGloballyOpenState = false; // 本地缓存的插件面板打开状态
       // === Advance-filters ===
-      // 20250602 新增：用于存储高级筛选当前值的对象
+      // 用于存储高级筛选当前值的对象
       this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
-      // this.init(); // init 将在 initializeExtension 中被调用
+      this.isAdvancedFiltersExpanded = false; // 确保构造函数中初始化此状态
     }
 
     // === Advance-filters ===
-    // 20250602 新增：获取高级筛选默认值
+    // 获取高级筛选默认值
     _getDefaultAdvancedFilterValues() {
-        return {
-            [ADVANCED_FILTER_STORAGE_KEYS.FROM_USER]: '',
-            [ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]: '',
-            [ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]: '',
-            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]: false,
-            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES]: false,
-            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS]: false,
-            [ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS]: false,
-            [ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE]: '',
-            [ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]: false,
-        };
+      return {
+          [ADVANCED_FILTER_STORAGE_KEYS.FROM_USER]: '',
+          [ADVANCED_FILTER_STORAGE_KEYS.FILTER_TODAY]: false, // 20250603 REFACTOR ADVANCED FILTERS UI: ADDED
+          [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]: false,
+          [ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES]: false,
+          [ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS]: false,
+          [ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS]: false,
+          [ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE]: '',
+          [ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]: false,
+      };
     }
 
     // --- UI 组件生成辅助方法 ---
@@ -262,16 +274,50 @@ class XSearchEnhancer {
         return container;
     }
 
+    // New helper for creating icon buttons ---
+    _createFilterIconButton(id, labelText, iconSvg, storageKey, initialValue = false) {
+      const button = document.createElement('button');
+      button.id = id;
+      button.type = 'button';
+      button.classList.add('xse-filter-button');
+      if (initialValue) {
+          button.classList.add('active');
+      }
+      button.setAttribute('aria-pressed', String(initialValue));
+      button.dataset.storageKey = storageKey; // Store the mapping to advancedFilterValues
+
+      const iconWrapper = document.createElement('span');
+      iconWrapper.className = 'xse-filter-button-icon';
+      iconWrapper.innerHTML = iconSvg; // Use the provided SVG string
+
+      const labelWrapper = document.createElement('span');
+      labelWrapper.className = 'xse-filter-button-label';
+      labelWrapper.textContent = labelText;
+
+      button.appendChild(iconWrapper);
+      button.appendChild(labelWrapper);
+      
+      button.addEventListener('click', () => {
+          const isActive = button.classList.toggle('active');
+          button.setAttribute('aria-pressed', String(isActive));
+          if (this.advancedFilterValues.hasOwnProperty(storageKey)) {
+              this.advancedFilterValues[storageKey] = isActive;
+          }
+          this._saveAdvancedFilterStates();
+      });
+      return button;
+    }
+
     // --- 高级筛选区域渲染方法 ---
     _renderAdvancedFiltersArea() {
         const area = document.createElement('div');
         area.id = DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID;
-        // area.style.display = 'none'; // 初始隐藏由 CSS 控制或 JS 添加 .xse-hidden
+        // area.style.display = 'none'; // Initial hiding is handled by CSS class 'xse-expanded' logic
         area.classList.add('xse-advanced-filters-area'); // 应用主区域样式
         area.setAttribute('role', 'region');
         area.setAttribute('aria-labelledby', DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID);
 
-        // 1. 用户筛选组
+        // 1. 指定用户 (From user) - Input field
         area.appendChild(this._createLabeledInput(
             DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID, // 容器ID用于JS控制显隐
             DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID,
@@ -280,67 +326,65 @@ class XSearchEnhancer {
             'username'
         ));
 
-        // 2. 日期筛选组
-        const dateFilterGroup = document.createElement('div');
-        dateFilterGroup.classList.add('xse-filter-group');
-        dateFilterGroup.appendChild(this._createLabeledInput(
-            '', 
-            DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID,
-            '开始日期 (Since):',
-            'date',
-            '',
-            { containerClasses: ['xse-date-since-container'] } // 可以添加更具体的类
-        ));
-        dateFilterGroup.appendChild(this._createLabeledInput(
-            '', 
-            DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID,
-            '结束日期 (Until):',
-            'date',
-            '',
-            { containerClasses: ['xse-date-until-container'] }
-        ));
-        const dateErrorMessage = document.createElement('small');
-        dateErrorMessage.id = DOM_SELECTORS.PANEL.DATE_ERROR_MESSAGE_ID;
-        dateErrorMessage.classList.add('xse-date-error'); // 应用错误提示样式
-        // dateErrorMessage.style.display = 'none'; // 由JS控制
-        dateErrorMessage.classList.add('xse-hidden');
-        dateFilterGroup.appendChild(dateErrorMessage);
-        area.appendChild(dateFilterGroup);
+        // --- MODIFICATION START: Replace checkboxes and date inputs with icon buttons ---
+        // 2. Filter buttons group
+        const filterButtonsGroup = document.createElement('div');
+        filterButtonsGroup.classList.add('xse-filter-group', 'xse-filter-buttons-group');
 
-        // 3. 内容类型筛选组
-        const contentTypeGroup = document.createElement('div');
-        contentTypeGroup.classList.add('xse-filter-group');
-        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID, '认证用户 (Verified users)'));
-        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID, '包含图片 (Includes images)'));
-        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID, '包含视频 (Includes videos)'));
-        contentTypeGroup.appendChild(this._createLabeledCheckbox(DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID, '包含链接 (Includes links)'));
-        area.appendChild(contentTypeGroup);
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.FILTER_TODAY_BTN_ID, '今日内容', ICONS.TODAY,
+            ADVANCED_FILTER_STORAGE_KEYS.FILTER_TODAY,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_TODAY]
+        ));
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.FILTER_VERIFIED_BTN_ID, '认证用户', ICONS.VERIFIED,
+            ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]
+        ));
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.FILTER_IMAGES_BTN_ID, '包含图片', ICONS.IMAGES,
+            ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES]
+        ));
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.FILTER_VIDEOS_BTN_ID, '包含视频', ICONS.VIDEOS,
+            ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS]
+        ));
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.FILTER_LINKS_BTN_ID, '包含链接', ICONS.LINKS,
+            ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS]
+        ));
+        filterButtonsGroup.appendChild(this._createFilterIconButton(
+            DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_BTN_ID, '排除回复', ICONS.EXCLUDE_REPLIES,
+            ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES,
+            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]
+        ));
+        area.appendChild(filterButtonsGroup);
+        // --- MODIFICATION END ---
         
-        // 4. 推文属性筛选组
+        // 3. 语言 (Language) - Select dropdown
         const langOptions = [
             { text: '任意语言', value: '' }, { text: '中文', value: 'zh' },
             { text: '英语', value: 'en' }, { text: '日语', value: 'ja' },
             { text: '韩语', value: 'ko' },
         ];
         area.appendChild(this._createLabeledSelect(
-            DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID,
-            '语言 (Language):',
-            langOptions
-        ));
-        area.appendChild(this._createLabeledCheckbox(
-            DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID, 
-            '排除回复 (Exclude replies)',
-            { marginTop: '10px' }
+          DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID,
+          '语言:',
+          langOptions,
+          { selectClasses: ['xse-select', 'xse-button-like-select'] } // Add class for button-like styling
         ));
         
-        // 5. 操作按钮组
+        // 4. 清除筛选 (Clear Filters) - Button
         const actionButtonsGroup = document.createElement('div');
-        actionButtonsGroup.classList.add('xse-filter-group'); // 也作为一组
-        actionButtonsGroup.style.marginTop = '20px'; // 保持这个微调
+        actionButtonsGroup.classList.add('xse-filter-group');
+        actionButtonsGroup.style.marginTop = '20px';
         actionButtonsGroup.appendChild(this._createButton(
             DOM_SELECTORS.PANEL.CLEAR_FILTERS_BTN_ID,
             '清除筛选',
-            { additionalClasses: ['xse-button'] } // 使用通用按钮类
+            { additionalClasses: ['xse-button'] }
         ));
         area.appendChild(actionButtonsGroup);
 
@@ -437,8 +481,8 @@ class XSearchEnhancer {
         return new Promise((resolve) => {
             if (chrome.runtime && chrome.runtime.id) {
                 const keysToGet = [
-                    ADVANCED_FILTER_STORAGE_KEYS.EXPANDED,
-                    ...Object.values(ADVANCED_FILTER_STORAGE_KEYS).filter(k => k !== ADVANCED_FILTER_STORAGE_KEYS.EXPANDED) // 获取所有筛选条件的值
+                  ADVANCED_FILTER_STORAGE_KEYS.EXPANDED,
+                  ...Object.values(ADVANCED_FILTER_STORAGE_KEYS).filter(k => k !== ADVANCED_FILTER_STORAGE_KEYS.EXPANDED) // 获取所有筛选条件的值
                 ];
                 chrome.storage.local.get(keysToGet, (result) => {
                     if (chrome.runtime.lastError) {
@@ -447,14 +491,22 @@ class XSearchEnhancer {
                         this.isAdvancedFiltersExpanded = false; // 默认不展开
                     } else {
                         this.isAdvancedFiltersExpanded = !!result[ADVANCED_FILTER_STORAGE_KEYS.EXPANDED];
-                        // 加载各个筛选条件的值，如果存储中没有，则使用默认值
+                        // 遍历 this.advancedFilterValues 的所有预设键
                         for (const key in this.advancedFilterValues) {
-                            if (result.hasOwnProperty(key)) {
-                                this.advancedFilterValues[key] = result[key];
-                            } else {
-                                // 如果某个键在存储中不存在，则使用默认对象中的值
-                                this.advancedFilterValues[key] = this._getDefaultAdvancedFilterValues()[key];
-                            }
+                          // 使用 Object.prototype.hasOwnProperty.call 确保只处理 result 对象自身的属性，
+                          // 而不是原型链上的，这是一种更安全的做法。
+                          if (Object.prototype.hasOwnProperty.call(result, key)) {
+                              // 如果存储中有这个键，则使用存储中的值
+                              this.advancedFilterValues[key] = result[key];
+                          } else {
+                              // 如果存储中没有这个键 (例如插件更新后新增的筛选条件，用户本地存储里还没有)
+                              // 则检查默认值对象中是否有这个键，有则使用默认值
+                              if (Object.prototype.hasOwnProperty.call(this._getDefaultAdvancedFilterValues(), key)) {
+                                  this.advancedFilterValues[key] = this._getDefaultAdvancedFilterValues()[key];
+                              }
+                              // 如果默认值里也没有（理论上不应该发生，因为 this.advancedFilterValues 就是从默认值初始化的），
+                              // 那么它会保持在构造函数或 _getDefaultAdvancedFilterValues 中的初始值。
+                          }
                         }
                     }
                     // console.log("XSE: Loaded advanced filter states:", this.isAdvancedFiltersExpanded, this.advancedFilterValues);
@@ -470,58 +522,60 @@ class XSearchEnhancer {
     }
 
     async _saveAdvancedFilterStates() {
-        if (!this.panel) return; // 仅当面板存在时（即UI元素已创建）才尝试读取和保存
+      if (!this.panel) { // 如果面板DOM不存在，则不执行任何操作
+          // console.warn("XSE: Panel not found, cannot save advanced filter states.");
+          return Promise.resolve(); // 返回一个已解决的Promise，避免调用方出错
+      }
 
-        // 从UI元素更新 this.advancedFilterValues
-        // 注意: from_user 的值在隐藏时不应该从UI读取，而应保留其在 this.advancedFilterValues 中的值
-        const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
-        const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
-        if (fromUserContainer && fromUserContainer.style.display !== 'none' && fromUserInput) { // 仅当可见时更新
-            this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
-        }
-        // 对于其他控件，可以直接从UI读取，因为它们总是可见（在高级筛选区域展开时）
-        const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
-        if (sinceDateInput) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE] = sinceDateInput.value;
-        
-        const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
-        if (untilDateInput) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE] = untilDateInput.value;
+      // 1. 读取 "指定用户 (From user)" 输入框的值 (仅当其可见时)
+      //    this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] 应该在其 'input' 事件监听中已更新。
+      //    此处可以再次确认，或者依赖于事件监听的正确性。
+      const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
+      const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
+      if (fromUserContainer && !fromUserContainer.classList.contains('xse-hidden') && fromUserInput) {
+          this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
+      }
+      // 如果 fromUserContainer 是隐藏的 (因为特别关注列表激活)，则 this.advancedFilterValues.FROM_USER 保留其之前的值。
 
-        const verifiedCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID}`);
-        if (verifiedCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED] = verifiedCheckbox.checked;
-        
-        const imagesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID}`);
-        if (imagesCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_IMAGES] = imagesCheckbox.checked;
+      // 2. 读取各个筛选按钮的状态 (例如 "今日内容", "认证用户" 等)
+      //    这些按钮的状态 (active/inactive) 应该在其各自的 click 事件监听器 
+      //    (_createFilterIconButton内部) 中已经更新了 this.advancedFilterValues 中对应的布尔值。
+      //    因此，这里不需要再次从DOM读取这些按钮的状态，this.advancedFilterValues 已经是最新。
 
-        const videosCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID}`);
-        if (videosCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VIDEOS] = videosCheckbox.checked;
+      // 3. 读取语言选择下拉框的值
+      const langSelect = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID}`);
+      if (langSelect) {
+          this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] = langSelect.value;
+      }
 
-        const linksCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID}`);
-        if (linksCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_LINKS] = linksCheckbox.checked;
-        
-        const langSelect = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID}`);
-        if (langSelect) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] = langSelect.value;
+      // 4. this.isAdvancedFiltersExpanded 的值应该在高级筛选切换按钮的点击事件中已经被正确更新。
 
-        const excludeRepliesCheckbox = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID}`);
-        if (excludeRepliesCheckbox) this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES] = excludeRepliesCheckbox.checked;
-
-        return new Promise((resolve) => {
-            if (chrome.runtime && chrome.runtime.id) {
-                const statesToSave = {
-                    [ADVANCED_FILTER_STORAGE_KEYS.EXPANDED]: this.isAdvancedFiltersExpanded,
-                    ...this.advancedFilterValues
-                };
-                // console.log("XSE: Saving advanced filter states:", statesToSave);
-                chrome.storage.local.set(statesToSave, () => {
-                    if (chrome.runtime.lastError) {
-                        console.warn('XSE: Error saving advanced filter states:', chrome.runtime.lastError.message);
-                    }
-                    resolve();
-                });
-            } else {
-                console.warn('XSE: Context invalidated before saving advanced filter states.');
-                resolve();
-            }
-        });
+      // 5. 执行保存操作
+      return new Promise((resolve) => {
+          if (chrome.runtime && chrome.runtime.id) { // 检查插件上下文是否有效
+              const statesToSave = {
+                  // 保存高级筛选区域的展开/收起状态
+                  [ADVANCED_FILTER_STORAGE_KEYS.EXPANDED]: this.isAdvancedFiltersExpanded,
+                  // 保存所有筛选条件的值
+                  // 使用展开运算符 (...) 来包含 this.advancedFilterValues 中的所有键值对
+                  ...this.advancedFilterValues 
+              };
+              
+              // console.log("XSE: Saving advanced filter states to chrome.storage.local:", statesToSave);
+              
+              chrome.storage.local.set(statesToSave, () => {
+                  if (chrome.runtime.lastError) {
+                      console.warn('XSE: Error saving advanced filter states to chrome.storage.local:', chrome.runtime.lastError.message);
+                  } else {
+                      // console.log("XSE: Advanced filter states saved successfully.");
+                  }
+                  resolve(); // 无论成功与否都 resolve Promise
+              });
+          } else {
+              console.warn('XSE: Extension context invalidated before saving advanced filter states.');
+              resolve(); // 上下文失效也 resolve Promise
+          }
+      });
     }
     
     // --- 更新：应用加载的筛选状态到UI ---
@@ -937,25 +991,27 @@ class XSearchEnhancer {
       const panelContainer = document.createElement('div');
       panelContainer.id = DOM_SELECTORS.PANEL.ID;
 
-      const panelContent = document.createElement('div');
-      // 样式直接在 content_styles.css 中通过 #x-search-enhancer-panel > div 控制
-      panelContent.style.padding = '32px'; // 保留这些基础布局，CSS中可覆盖
-      panelContent.style.overflowY = 'auto';
-      panelContent.style.maxHeight = 'calc(100vh - 80px)';
+      // panelContainer 将采用 flex column 布局 (在 CSS 中定义)
+
+      // 20250603 新增：可滚动的内容区域
+      const panelScrollableContent = document.createElement('div');
+      panelScrollableContent.className = 'xse-panel-scrollable-content';
+
+      // --- 将原面板的主要内容（除底部按钮外）放入 panelScrollableContent ---
 
       // 1. 标题和关闭按钮
       const headerDiv = document.createElement('div');
       // 样式直接在 content_styles.css 中通过 #x-search-enhancer-panel h2 和 #close-panel 控制
       Object.assign(headerDiv.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' });
       const title = document.createElement('h2');
-      title.textContent = 'X 搜索增强';
+      title.textContent = 'X-Search-Enhancer';
       headerDiv.appendChild(title);
       headerDiv.appendChild(this._createButton(DOM_SELECTORS.PANEL.CLOSE_BUTTON.substring(1), '×'));
-      panelContent.appendChild(headerDiv);
+      panelScrollableContent.appendChild(headerDiv);
 
       // 2. 搜索关键词输入区域
       const searchInputMainContainer = document.createElement('div');
-      searchInputMainContainer.style.marginBottom = '28px';
+      searchInputMainContainer.style.marginBottom = '28px'; // 保持原有的间距控制
       const searchInputContainer = document.createElement('div');
       searchInputContainer.className = 'search-input-container';
       const searchIcon = document.createElement('div');
@@ -965,42 +1021,49 @@ class XSearchEnhancer {
       const searchKeywordsInput = document.createElement('input');
       searchKeywordsInput.type = 'text';
       searchKeywordsInput.id = DOM_SELECTORS.PANEL.SEARCH_INPUT.substring(1);
-      searchKeywordsInput.placeholder = '请输入你想搜索的内容...';
+      searchKeywordsInput.placeholder = '搜索 X 推文...';
       searchInputContainer.appendChild(searchKeywordsInput);
       searchInputMainContainer.appendChild(searchInputContainer);
-      panelContent.appendChild(searchInputMainContainer);
+      panelScrollableContent.appendChild(searchInputMainContainer);
 
       // 3. 高级筛选切换按钮
       const toggleAdvancedFiltersBtn = this._createButton(
           DOM_SELECTORS.PANEL.TOGGLE_ADVANCED_FILTERS_BTN_ID,
-          '高级筛选 ▼'
+          '高级筛选 ▼' // Chinese: 高级筛选 ▼
       );
       toggleAdvancedFiltersBtn.setAttribute('aria-expanded', 'false');
       toggleAdvancedFiltersBtn.setAttribute('aria-controls', DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID);
-      panelContent.appendChild(toggleAdvancedFiltersBtn);
+      panelScrollableContent.appendChild(toggleAdvancedFiltersBtn);
 
       // 4. 高级筛选区域 (通过新方法渲染)
       const advancedFiltersArea = this._renderAdvancedFiltersArea();
-      panelContent.appendChild(advancedFiltersArea);
+      panelScrollableContent.appendChild(advancedFiltersArea);
 
       // 5. 特别关注区域
       const specialUsersMainContainer = document.createElement('div');
-      specialUsersMainContainer.style.marginBottom = '28px';
+      specialUsersMainContainer.style.marginBottom = '28px'; // 保持原有的间距控制
       const specialUsersHeader = document.createElement('h3');
-      specialUsersHeader.innerHTML = `特别关注 <div class="${DOM_SELECTORS.PANEL.USER_COUNT_BADGE.substring(1)}">${this.specialUsers.length}</div>`;
+      specialUsersHeader.innerHTML = `特别关注 <div class="${DOM_SELECTORS.PANEL.USER_COUNT_BADGE.substring(1)}">${this.specialUsers.length}</div>`; // Chinese: 特别关注
       specialUsersMainContainer.appendChild(specialUsersHeader);
       const specialUsersListContainer = document.createElement('div');
       specialUsersListContainer.id = DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1);
       specialUsersMainContainer.appendChild(specialUsersListContainer);
-      panelContent.appendChild(specialUsersMainContainer);
+      panelScrollableContent.appendChild(specialUsersMainContainer);
 
-      // 6. 执行搜索按钮
-      panelContent.appendChild(this._createButton(
+      // --- 将可滚动内容区域添加到主容器 ---
+      panelContainer.appendChild(panelScrollableContent);
+
+      // 20250603 新增：面板底部 (固定区域)
+      const panelFooter = document.createElement('div');
+      panelFooter.className = 'xse-panel-footer';
+      
+      // 将“开始搜索”按钮移到 panelFooter 中
+      panelFooter.appendChild(this._createButton(
           DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1), 
           '开始搜索'
       ));
+      panelContainer.appendChild(panelFooter);
 
-      panelContainer.appendChild(panelContent);
       document.body.appendChild(panelContainer);
       this.panel = panelContainer;
 
@@ -1040,88 +1103,58 @@ class XSearchEnhancer {
         toggleAdvancedBtn.addEventListener('click', () => {
             const filtersArea = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.ADVANCED_FILTERS_AREA_ID}`);
             if (filtersArea) {
-                // const newState = filtersArea.style.display === 'none';
-                // filtersArea.style.display = newState ? 'block' : 'none'; 
-                const newState = !filtersArea.classList.contains('xse-expanded');
-                if (newState) {
-                    filtersArea.classList.add('xse-expanded');
-                    filtersArea.classList.remove('xse-hidden'); // 确保移除，尽管CSS可能已处理
-                } else {
-                    filtersArea.classList.remove('xse-expanded');
-                }
-                toggleAdvancedBtn.textContent = newState ? '高级筛选 ▲' : '高级筛选 ▼';
-                toggleAdvancedBtn.setAttribute('aria-expanded', String(newState));
-                this.isAdvancedFiltersExpanded = newState;
-                this._saveAdvancedFilterStates(); 
+              // MODIFIED: 更新 this.isAdvancedFiltersExpanded 状态
+              this.isAdvancedFiltersExpanded = !this.isAdvancedFiltersExpanded; // 切换当前的展开状态
+              
+              // 根据新状态更新UI
+              if (this.isAdvancedFiltersExpanded) {
+                  filtersArea.classList.add('xse-expanded');
+                  filtersArea.classList.remove('xse-hidden'); 
+              } else {
+                  filtersArea.classList.remove('xse-expanded');
+              }
+              toggleAdvancedBtn.textContent = this.isAdvancedFiltersExpanded ? '高级筛选 ▲' : '高级筛选 ▼';
+              toggleAdvancedBtn.setAttribute('aria-expanded', String(this.isAdvancedFiltersExpanded));
+              
+              // 最重要的一步：保存包括新的展开状态在内的所有高级筛选设置
+              this._saveAdvancedFilterStates(); 
             }
         });
       }
 
-      // “清除筛选”按钮事件
       const clearFiltersBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.CLEAR_FILTERS_BTN_ID}`);
       if (clearFiltersBtn) {
           clearFiltersBtn.addEventListener('click', () => {
-              // 重置 this.advancedFilterValues 为默认值
-              this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
-              // 将这些默认值应用回 UI 控件
-              this._applyAdvancedFilterStatesToUI(); // 这会更新UI并调用 updateAdvancedFiltersUI
-              // 保存重置后的状态
-              this._saveAdvancedFilterStates();
+              this.advancedFilterValues = this._getDefaultAdvancedFilterValues(); // Resets all filter values
+              this._applyAdvancedFilterStatesToUI(); // Applies these defaults back to the UI elements
+              this._saveAdvancedFilterStates(); // Saves the reset state
           });
       }
 
-      // 日期校验事件绑定
-      const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
-      const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
-      if (sinceDateInput) {
-          sinceDateInput.addEventListener('change', () => {
-              this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE] = sinceDateInput.value;
-              this._validateDates();
-              this._saveAdvancedFilterStates();
-          });
-      }
-      if (untilDateInput) {
-          untilDateInput.addEventListener('change', () => {
-              this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE] = untilDateInput.value;
-              this._validateDates();
-              this._saveAdvancedFilterStates();
-          });
-      }
-
-      // 其他筛选条件值改变时保存状态
-      const filterInputsToWatch = [
-          // from_user 在 updateAdvancedFiltersUI 中处理显隐，其值在 _saveAdvancedFilterStates 中根据可见性读取
-          // DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID, // input event
-          DOM_SELECTORS.PANEL.FILTER_VERIFIED_CHECKBOX_ID, // change event
-          DOM_SELECTORS.PANEL.FILTER_IMAGES_CHECKBOX_ID,   // change event
-          DOM_SELECTORS.PANEL.FILTER_VIDEOS_CHECKBOX_ID,  // change event
-          DOM_SELECTORS.PANEL.FILTER_LINKS_CHECKBOX_ID,    // change event
-          DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID,         // change event
-          DOM_SELECTORS.PANEL.EXCLUDE_REPLIES_CHECKBOX_ID // change event
-      ];
-
-      filterInputsToWatch.forEach(inputId => {
-          const inputElement = this.panel.querySelector(`#${inputId}`);
-          if (inputElement) {
-              const eventType = inputElement.type === 'checkbox' || inputElement.tagName === 'SELECT' ? 'change' : 'input';
-              inputElement.addEventListener(eventType, () => {
-                  // _saveAdvancedFilterStates 会从UI读取当前值并保存
-                  this._saveAdvancedFilterStates();
-              });
-          }
-      });
-      // from:username 的 input 事件单独处理，因为它可能被隐藏
+      // --- MODIFICATION START: Update event binding for new filter controls ---
+      // Event listeners for icon buttons are now set within _createFilterIconButton.
+      // Event listener for 'from user' input (if its value changes, save state)
       const fromUserInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_INPUT_ID}`);
       if(fromUserInput) {
           fromUserInput.addEventListener('input', () => {
-              // 只有当它可见时，它的值变化才触发保存
               const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
-              if(fromUserContainer && fromUserContainer.style.display !== 'none') {
+              if(fromUserContainer && !fromUserContainer.classList.contains('xse-hidden')) { // Only save if visible
                 this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
                 this._saveAdvancedFilterStates();
               }
           });
       }
+      
+      // Event listener for language select
+      const langSelect = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.LANG_CODE_SELECT_ID}`);
+      if (langSelect) {
+          langSelect.addEventListener('change', () => {
+              this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] = langSelect.value;
+              this._saveAdvancedFilterStates();
+          });
+      }
+      // REMOVE event listeners for date inputs
+      // --- MODIFICATION END ---
     }
 
     // --- 新增：日期校验方法 ---
@@ -1285,13 +1318,18 @@ class XSearchEnhancer {
         }
       }
 
-      // 3. 添加其他高级筛选条件
-      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]) {
-        queryParts.push(`since:${this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.SINCE_DATE]}`);
+      // --- MODIFICATION START: 3、Add "Today's Content" logic and other filters ---
+      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_TODAY]) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayDateString = `${year}-${month}-${day}`;
+        queryParts.push(`since:${todayDateString}`);
+        queryParts.push(`until:${todayDateString}`);
       }
-      if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]) {
-        queryParts.push(`until:${this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.UNTIL_DATE]}`);
-      }
+      // REMOVE since: and until: logic for date inputs
+
       if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FILTER_VERIFIED]) {
         queryParts.push('filter:verified');
       }
@@ -1310,6 +1348,7 @@ class XSearchEnhancer {
       if (this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.EXCLUDE_REPLIES]) {
         queryParts.push('-filter:replies');
       }
+      // --- MODIFICATION END ---
 
       const finalSearchQuery = queryParts.join(' ').trim();
 
@@ -1340,29 +1379,10 @@ class XSearchEnhancer {
         return;
       }
 
-      // 日期校验
-      if (!this._validateDates()) {
-        console.log("XSE: Invalid date range. Search aborted.");
-        const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
-         if (searchBtn && !searchBtn.dataset.isPrompting) {
-            searchBtn.dataset.isPrompting = 'true';
-            searchBtn.textContent = '日期范围无效';
-            searchBtn.disabled = true;
-            setTimeout(() => {
-               if(this.panel && searchBtn.dataset.isPrompting === 'true') {
-                  searchBtn.textContent = '开始搜索';
-                  searchBtn.disabled = false;
-                  delete searchBtn.dataset.isPrompting;
-               }
-            }, 2000);
-        }
-        return;
-      }
-
       const encodedQuery = encodeURIComponent(finalSearchQuery);
       const searchUrl = `https://x.com/search?q=${encodedQuery}&src=typed_query`;
 
-      //   const searchBtn = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
+      // const searchBtn = this.panel.querySelector(DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON);
       const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
       if (searchBtn) {
           searchBtn.innerHTML = '搜索中...';

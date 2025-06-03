@@ -44,7 +44,7 @@
     top: 20px !important;
     right: 20px !important;
     width: 380px !important;
-    max-height: calc(100vh - 40px) !important;
+    max-height: calc(100vh - 40px) !important; /* 整体最大高度 */
     background: var(--background-primary) !important;
     backdrop-filter: blur(40px) !important;
     -webkit-backdrop-filter: blur(40px) !important;
@@ -52,22 +52,33 @@
     border: 1px solid rgba(255, 255, 255, 0.18) !important; /* 毛玻璃效果的边框 */
     box-shadow: var(--shadow-heavy), 0 0 0 0.5px rgba(255, 255, 255, 0.3) !important;
     z-index: 2147483647 !important; /* 尝试使用一个非常高的z-index值 */
-    overflow: hidden !important;
+    overflow: hidden !important; /* 防止内部元素溢出面板圆角 */
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif !important;
-    animation: slideInPanel var(--transition-slow); /* !important 移除，动画通常不需要 */
-    font-feature-settings: "kern" 1, "liga" 1; /* !important 移除 */
-    -webkit-font-smoothing: antialiased; /* !important 移除 */
-    -moz-osx-font-smoothing: grayscale; /* !important 移除 */
+    animation: slideInPanel var(--transition-slow);
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     pointer-events: auto !important; /* 确保面板可交互 */
+    display: flex !important; /* MODIFIED: 启用flex布局 */
+    flex-direction: column !important; /* MODIFIED: 垂直排列子元素 */
   }
   
-  /* 面板内容容器 */
-  #x-search-enhancer-panel > div {
-    padding: 32px; /* !important 移除，ID选择器特异性足够 */
-    overflow-y: auto; /* !important 移除 */
-    max-height: calc(100vh - 80px); /* !important 移除 */
+  /* 20250603 新增：可滚动内容区域样式 */
+  .xse-panel-scrollable-content {
+    flex-grow: 1; /* 占据可用空间 */
+    overflow-y: auto; /* 内容超出时显示垂直滚动条 */
+    padding: 28px; /* 内边距，可根据设计调整，原为32px */
+    /* max-height 不再需要，由 flex-grow 和父容器的 max-height 控制 */
   }
-  
+
+  /* 20250603 新增：面板底部固定区域样式 */
+  .xse-panel-footer {
+    flex-shrink: 0; /* 防止在空间不足时被压缩 */
+    padding: 16px 28px; /* 底部按钮区域的内边距 */
+    border-top: 1px solid var(--border-color);
+    background-color: var(--background-primary); /* 确保背景与面板一致，以覆盖滚动内容 */
+  }
+
   /* 面板标题区域 */
   #x-search-enhancer-panel h2 {
     margin: 0;
@@ -109,10 +120,12 @@
     transform: scale(0.95); /* !important 移除 */
   }
   
-  /* 搜索输入框容器 */
-  #x-search-enhancer-panel .search-input-container {
-    position: relative; /* !important 移除 */
-    margin-bottom: 32px; /* !important 移除 */
+  /* 搜索关键词输入区域的下边距 */
+  /* searchInputMainContainer.style.marginBottom = '28px'; (JS中设置) */
+  /* 可以考虑在CSS中统一管理这些主要模块的间距 */
+  #x-search-enhancer-panel .search-input-container { /* 或者它的父容器 searchInputMainContainer */
+    position: relative;
+    margin-bottom: 20px; /* MODIFIED: 调整与高级筛选切换按钮的间距 */
   }
   
   /* 搜索图标 */
@@ -126,6 +139,7 @@
     pointer-events: none; /* !important 移除，通常不需要 */
     opacity: 0.8;
     transition: all var(--transition-fast);
+    z-index: 1; /* 确保在输入框之上，如果输入框有背景色 */
     /* 以上均移除 !important */
   }
   
@@ -166,7 +180,7 @@
   
   /* 特别关注区域标题 */
   #x-search-enhancer-panel h3 {
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0; /* MODIFIED: 调整下边距以配合上方模块 */
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
@@ -337,34 +351,34 @@
   
   /* 执行搜索按钮 */
   #x-search-enhancer-panel #execute-search {
-    width: 100%; /* !important 移除 */
-    padding: 18px 24px;
-    background: linear-gradient(135deg, var(--primary-blue) 0%, #0051D5 100%);
-    color: white;
-    border: none;
-    border-radius: var(--radius-medium);
-    font-size: 16px;
-    font-weight: 600;
+    width: 100%;
+    padding: 16px 24px; /* MODIFIED: 恢复或调整为合适的内边距，确保按钮饱满 */
+    background: linear-gradient(135deg, var(--primary-blue) 0%, #0051D5 100%); /* MODIFIED: 确保背景样式被应用 */
+    color: white; /* MODIFIED: 确保文字颜色 */
+    border: none; /* MODIFIED: 确保无边框 */
+    border-radius: var(--radius-medium); /* MODIFIED: 应用圆角 */
+    font-size: 16px; /* MODIFIED: 确保字体大小 */
+    font-weight: 600; /* MODIFIED: 确保字体粗细 */
     cursor: pointer !important; /* cursor 保持 !important */
-    transition: all var(--transition-medium);
-    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.25);
+    transition: all var(--transition-medium); /* MODIFIED: 确保过渡效果 */
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.25); /* MODIFIED: 应用阴影 */
     letter-spacing: 0.4px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    font-family: inherit; /* !important 移除 */
-    /* 以上大部分移除 !important */
+    font-family: inherit; /* 确保继承字体 */
+    margin-top: 0; /* 已在模块一中调整，因为按钮在footer中 */
   }
-  
+
   #x-search-enhancer-panel #execute-search:hover {
-    transform: translateY(-2px) scale(1.02); /* !important 移除 */
-    box-shadow: 0 12px 32px rgba(0, 122, 255, 0.35); /* !important 移除 */
-    background: linear-gradient(135deg, #0066FF 0%, #0040CC 100%); /* !important 移除 */
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(0, 122, 255, 0.35);
+    background: linear-gradient(135deg, #0066FF 0%, #0040CC 100%);
   }
-  
+
   #x-search-enhancer-panel #execute-search:active {
-    transform: translateY(0) scale(0.98); /* !important 移除 */
-    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2); /* !important 移除 */
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2);
   }
-  
+
   /* 用户主页的特别关注按钮 - 这些样式在页面上，可能需要 !important 来覆盖X.com的样式 */
   .x-search-enhancer-follow-btn {
     display: inline-flex !important;
@@ -491,29 +505,34 @@
   /* 响应式设计 - 这里的 !important 可能是为了确保覆盖面板默认尺寸 */
   @media (max-width: 480px) {
     #x-search-enhancer-panel {
-      width: calc(100vw - 20px) !important;
-      right: 10px !important;
-      left: 10px !important;
-      max-width: none !important;
+        width: calc(100vw - 20px) !important;
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none !important;
     }
     
-    #x-search-enhancer-panel > div {
-      padding: 24px; /* !important 移除 */
+    /* 调整可滚动内容区域中主要块之间的间距 */
+    .xse-panel-scrollable-content > div { /* 直接子div，如搜索框容器、高级筛选切换按钮的父级(如果单独包裹)、高级筛选区域容器、特别关注容器 */
+      /* margin-bottom: 28px; /* 这是一个通用的间距，现在我们更精细地控制 */
+    }
+    
+    .xse-panel-footer { /* MODIFIED: 新增底部区域的响应式内边距 */
+        padding: 12px 20px;
     }
     
     #x-search-enhancer-panel h2 {
-      font-size: 20px; /* !important 移除 */
+        font-size: 20px;
     }
   }
   
   @media (max-height: 600px) {
     #x-search-enhancer-panel {
-      max-height: calc(100vh - 20px) !important;
-      top: 10px !important;
+        max-height: calc(100vh - 20px) !important;
+        top: 10px !important;
     }
     
     #x-search-enhancer-panel #special-users-container {
-      max-height: 200px; /* !important 移除 */
+        max-height: 200px; 
     }
   }
   
@@ -569,13 +588,12 @@
 #x-search-enhancer-panel #xse-toggle-advanced-filters-btn {
     background: none !important; /* 覆盖可能的内联样式 */
     border: none !important; /* 覆盖可能的内联样式 */
-    color: var(--primary-blue) !important; /* 使用CSS变量 */
+    color: var(--text-primary);
     cursor: pointer !important;
     padding: 8px 0 !important;
-    margin-top: 0px !important;
-    margin-bottom: 10px !important;
-    font-size: 15px; /* 调整字体大小以匹配其他文本 */
-    font-weight: 500;
+    margin-bottom: 12px !important;
+    font-size: 18px; /* 调整字体大小以匹配其他文本 */
+    font-weight: 600;
     display: block; /* 确保其占据整行以便对齐 */
     width: 100%;
     text-align: left; /* 按钮文本左对齐 */
@@ -583,7 +601,7 @@
   }
   
   #x-search-enhancer-panel #xse-toggle-advanced-filters-btn:hover {
-    color: var(--secondary-purple); /* 悬停时变色 */
+    color: var(--primary-blue);; /* 悬停时变色 */
   }
   
   /* 高级筛选区域容器 */
@@ -591,14 +609,18 @@
     border: 1px solid var(--border-color) !important; /* 覆盖可能的内联样式 */
     border-radius: var(--radius-medium) !important; /* 覆盖可能的内联样式 */
     padding: 20px !important; /* 覆盖可能的内联样式 */
-    margin-bottom: 28px !important; /* 覆盖可能的内联样式 */
+    /* margin-bottom: 28px !important; /* MODIFIED: 这个是展开时的下边距，如果收起时希望间距小，需要动态调整或用其他方式 */
     background-color: var(--background-tertiary); /* 给一个轻微的背景色以区分 */
     /* display: none;  由JS控制初始状态 */
     /* 展开/收起动画 - 使用 max-height 和 opacity */
     max-height: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), padding-top 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), padding-bottom 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition: max-height 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                opacity 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                padding-top 0.35s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                padding-bottom 0.35s cubic-bezier(0.165, 0.84, 0.44, 1),
+                margin-bottom 0.35s cubic-bezier(0.165, 0.84, 0.44, 1); /* MODIFIED: 添加 margin-bottom 到过渡 */
   }
   
   #x-search-enhancer-panel #xse-advanced-filters-area.xse-expanded {
@@ -606,6 +628,15 @@
     opacity: 1;
     padding-top: 20px; /* 恢复内边距 */
     padding-bottom: 20px; /* 恢复内边距 */
+    margin-bottom: 28px !important; /* MODIFIED: 展开时应用较大的下边距 */
+  }
+
+  /* 如果高级筛选区域收起时，其自身的 margin-bottom 应该为0或一个较小的值 */
+  #x-search-enhancer-panel #xse-advanced-filters-area:not(.xse-expanded) {
+    margin-bottom: 12px !important; /* MODIFIED: 收起时应用较小的下边距，与切换按钮的下边距协调 */
+    padding-top: 0; /* 确保收起时无内边距 */
+    padding-bottom: 0;
+    border-width: 0px; /* 收起时可以隐藏边框 */
   }
   
   /* 筛选条件分组的通用样式 */
@@ -625,9 +656,8 @@
     color: var(--text-primary);
   }
   
-  /* 输入框 (文本, 日期) 和下拉选择框的通用样式 */
+  /* 输入框 (文本) 和下拉选择框的通用样式 */
   #x-search-enhancer-panel .xse-input,
-  #x-search-enhancer-panel .xse-date-input,
   #x-search-enhancer-panel .xse-select {
     width: 100% !important; /* 覆盖可能的内联样式 */
     padding: 12px 16px; /* 调整内边距 */
@@ -641,48 +671,111 @@
     box-sizing: border-box; /* 确保 padding 和 border 不会增加元素的总宽度 */
   }
   
-  #x-search-enhancer-panel .xse-input::placeholder,
-  #x-search-enhancer-panel .xse-date-input::placeholder {
+  #x-search-enhancer-panel .xse-input::placeholder {
     color: var(--text-secondary);
     opacity: 0.8;
   }
   
   #x-search-enhancer-panel .xse-input:focus,
-  #x-search-enhancer-panel .xse-date-input:focus,
   #x-search-enhancer-panel .xse-select:focus {
     border-color: var(--primary-blue) !important;
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1); /* 调整阴影 */
   }
   
-  /* 特定于日期输入的样式 (如果需要) */
-  #x-search-enhancer-panel .xse-date-input {
-    /* 可以添加特定于日期选择器的样式，例如日历图标的颜色（如果浏览器允许） */
+  /* --- MODIFICATION START: Styles for New Filter Icon Buttons --- */
+  .xse-filter-buttons-group {
+    display: flex;
+    flex-wrap: wrap; /* 允许按钮换行 */
+    gap: 8px; /* 按钮之间的间距 */
+    /* margin-bottom: 16px; /* 可选，如果分组内只有按钮组，则由 .xse-filter-group 控制外边距 */
   }
-  
-  /* 复选框容器和标签样式 */
-  #x-search-enhancer-panel .xse-checkbox-container {
-    display: flex !important; /* 覆盖可能的内联样式 */
-    align-items: center !important; /* 覆盖可能的内联样式 */
-    margin-bottom: 10px !important; /* 复选框之间的间距 */
-  }
-  #x-search-enhancer-panel .xse-checkbox-container:last-child {
-      margin-bottom: 0;
-  }
-  
-  #x-search-enhancer-panel .xse-checkbox-input { /* 复选框本身的样式 */
-    margin-right: 10px !important; /* 覆盖可能的内联样式 */
-    accent-color: var(--primary-blue); /* 改变复选框选中时的颜色 */
-    width: 16px; /* 调整大小 */
-    height: 16px; /* 调整大小 */
-    cursor: pointer;
-  }
-  
-  #x-search-enhancer-panel .xse-checkbox-label { /* 复选框标签的样式 */
-    font-size: 15px;
+
+  .xse-filter-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px; /* 图标和文本之间的间距 */
+    padding: 7px 10px; /* 调整内边距使按钮更紧凑 */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-small); /* 使用小圆角 */
+    background-color: var(--background-secondary);
     color: var(--text-primary);
     cursor: pointer;
-    user-select: none; /* 防止文本被选中 */
+    transition: all var(--transition-fast);
+    font-size: 13px; /* 调整字体大小 */
+    font-family: inherit;
+    line-height: 1.3;
+    text-align: left; /* 确保文本左对齐 */
   }
+
+  .xse-filter-button:hover {
+    border-color: var(--primary-blue);
+    background-color: rgba(0, 122, 255, 0.08); /* 稍微加深悬停背景 */
+  }
+
+  .xse-filter-button.active {
+    background-color: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+  }
+
+  .xse-filter-button .xse-filter-button-icon {
+    display: inline-flex; /* 确保SVG图标垂直居中 */
+    align-items: center;
+    /* SVG图标的大小应在SVG自身或通过CSS的width/height控制 */
+  }
+
+  .xse-filter-button .xse-filter-button-icon svg {
+    width: 16px; /* 控制SVG大小 */
+    height: 16px;
+    fill: currentColor; /* 使SVG颜色继承按钮文本颜色 */
+  }
+
+  .xse-filter-button.active .xse-filter-button-icon svg {
+    fill: white; /* 激活时图标颜色 */
+  }
+
+  .xse-filter-button .xse-filter-button-label {
+    /* 按钮内文本标签的特定样式 (如果需要) */
+  }
+  /* --- MODIFICATION END: Styles for New Filter Icon Buttons --- */
+
+  /* --- MODIFICATION START: Styles for Button-like Select Dropdown --- */
+  #x-search-enhancer-panel .xse-select.xse-button-like-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+
+    background-color: var(--background-secondary); /* 与按钮背景一致 */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-small); /* 与按钮圆角一致 */
+    padding: 9px 32px 9px 12px; /* 调整内边距，右侧为箭头留空 */
+    font-size: 13px; /* 与按钮字体大小一致 */
+    color: var(--text-primary);
+    cursor: pointer;
+    /* width: 100%; /* 已在通用 .xse-select 中定义 */
+    box-sizing: border-box;
+    line-height: 1.3; /* 调整行高 */
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center; /* 调整箭头位置 */
+    background-size: 14px 14px; /* 调整箭头大小 */
+  }
+
+  #x-search-enhancer-panel .xse-select.xse-button-like-select:hover {
+    border-color: var(--primary-blue);
+    background-color: rgba(0, 122, 255, 0.08);
+  }
+
+  #x-search-enhancer-panel .xse-select.xse-button-like-select:focus {
+    /* outline, border-color, box-shadow 已在通用 .xse-select:focus 中定义 */
+  }
+
+  #x-search-enhancer-panel .xse-select.xse-button-like-select::-ms-expand { /* IE/Edge 老版本 */
+    display: none;
+  }
+  /* --- MODIFICATION END: Styles for Button-like Select Dropdown --- */
   
   /* 清除筛选按钮 */
   #x-search-enhancer-panel #xse-clear-filters-btn.xse-button { /* 使用类名以便统一 */
@@ -700,14 +793,6 @@
   #x-search-enhancer-panel #xse-clear-filters-btn.xse-button:hover {
     background-color: rgba(120, 120, 128, 0.18); /* 调整悬停背景色 */
     border-color: rgba(120, 120, 128, 0.3);
-  }
-  
-  /* 日期错误提示信息 */
-  #x-search-enhancer-panel #xse-date-error-message {
-    color: #FF3B30 !important; /* 更鲜明的红色 */
-    font-size: 13px;
-    margin-top: 8px;
-    /* display: none; 由JS控制 */
   }
   
   /* 用于JS控制显隐的通用类 */
