@@ -191,8 +191,8 @@
     /* 以上均移除 !important */
   }
   
-  /* 用户数量徽章 */
-  #x-search-enhancer-panel .user-count-badge {
+  /* 用户数量徽章，也是切换按钮 */
+  #x-search-enhancer-panel .user-count-badge { /* This class is now on a <button> */
     background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 100%);
     color: white;
     font-size: 12px;
@@ -202,19 +202,36 @@
     letter-spacing: 0.3px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
-    /* 以上均移除 !important */
+    border: none; /* Ensure button has no default border */
+    cursor: default; /* Default cursor, JS will change to pointer if toggleable */
+    transition: background-color var(--transition-fast), opacity var(--transition-fast); /* Add transitions */
   }
+
+  /* --- MODIFICATION START: Styles for interactive toggle button --- */
+  #x-search-enhancer-panel #xse-special-users-toggle-btn { /* Specific ID for the button */
+    /* Inherits .user-count-badge styles */
+  }
+
+  #x-search-enhancer-panel #xse-special-users-toggle-btn:not(:disabled):hover {
+    opacity: 0.85; /* Slight hover effect if not disabled */
+  }
+
+  #x-search-enhancer-panel #xse-special-users-toggle-btn.xse-toggle-active {
+    /* Optional: Style for when the list is expanded, e.g., slightly different background */
+    /* background: linear-gradient(135deg, var(--secondary-purple) 0%, var(--primary-blue) 100%); */
+  }
+  /* --- MODIFICATION END --- */
   
   /* 特别关注用户容器 */
   #x-search-enhancer-panel #special-users-container {
-    max-height: 280px;
+    max-height: 280px; /* This was the original max-height, might need adjustment or removal if list expands beyond this */
     overflow-y: auto;
     border-radius: var(--radius-large);
     background: var(--background-tertiary);
     border: 1px solid var(--border-color);
-    margin-bottom: 32px;
-    transition: all var(--transition-fast);
-    /* 以上均移除 !important */
+    /* margin-bottom: 32px; /* This was original, ensure it's still desired or handled by parent's padding */
+    transition: all var(--transition-fast); /* Existing transition */
+    /* Consider transition for max-height if using CSS to expand/collapse, but JS re-render is current approach */
   }
   
   /* 空状态样式 */
@@ -256,6 +273,15 @@
     border-bottom: 1px solid var(--border-color);
     /* 以上大部分移除 !important */
   }
+
+  #x-search-enhancer-panel .special-user-item .user-info { /* Ensure user-info area is clickable */
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer; /* Make the info area explicitly clickable */
+  }
   
   #x-search-enhancer-panel .special-user-item:last-child {
     border-bottom: none !important; /* 覆盖上面的 border-bottom，保持 !important */
@@ -268,16 +294,6 @@
   
   #x-search-enhancer-panel .special-user-item:active {
     transform: translateX(0) scale(0.98); /* !important 移除 */
-  }
-  
-  /* 用户信息容器 */
-  #x-search-enhancer-panel .user-info {
-    flex: 1;
-    min-width: 0; /* 防止内容溢出 */
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    /* 以上均移除 !important */
   }
   
   /* 用户状态指示器 */
@@ -293,22 +309,23 @@
   }
   
   /* 用户详情 */
-  #x-search-enhancer-panel .user-details {
+  #x-search-enhancer-panel .special-user-item .user-details {
     flex: 1;
     min-width: 0; /* 防止文本溢出 */
-    /* 以上均移除 !important */
+    display: flex; /* MODIFIED: 使内部元素垂直排列 */
+    flex-direction: column; /* MODIFIED: 垂直排列 displayName 和 username */
+    justify-content: center; /* 可选：如果希望在有多余空间时垂直居中 */
   }
   
   #x-search-enhancer-panel .user-display-name {
     font-weight: 500;
     color: var(--text-primary);
     font-size: 15px;
-    margin-bottom: 3px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     letter-spacing: -0.2px;
-    /* 以上均移除 !important */
+    line-height: 1.3; /* Ensure good line height if it's the only text */
   }
   
   #x-search-enhancer-panel .user-username {
@@ -316,7 +333,10 @@
     font-size: 13px;
     font-weight: 400;
     letter-spacing: 0.1px;
-    /* 以上均移除 !important */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
   }
   
   /* 移除用户按钮 */

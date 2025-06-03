@@ -96,6 +96,8 @@ const ADVANCED_FILTER_STORAGE_KEYS = {
   FILTER_LINKS: 'xseAdvancedFilterLinks',
   LANG_CODE: 'xseAdvancedFilterLangCode',
   EXCLUDE_REPLIES: 'xseAdvancedFilterExcludeReplies',
+  // Add storage key for special users list expansion state 
+  SPECIAL_USERS_EXPANDED: 'xseSpecialUsersExpanded'
 };
 
 // TODO：Placeholder for SVG icons - in a real scenario, these would be actual SVG strings or loaded from files.
@@ -174,6 +176,10 @@ class XSearchEnhancer {
       // 用于存储高级筛选当前值的对象
       this.advancedFilterValues = this._getDefaultAdvancedFilterValues();
       this.isAdvancedFiltersExpanded = false; // 确保构造函数中初始化此状态
+
+      // Add state for Special Users list expansion
+      this.isSpecialUsersListExpanded = false; // 默认列表不展开显示全部
+      this.initialSpecialUsersToShow = 2;    // 列表折叠时默认显示的用户数量
     }
 
     // === Advance-filters ===
@@ -303,7 +309,7 @@ class XSearchEnhancer {
           if (this.advancedFilterValues.hasOwnProperty(storageKey)) {
               this.advancedFilterValues[storageKey] = isActive;
           }
-          this._saveAdvancedFilterStates();
+          this._savePersistentUiStates();
       });
       return button;
     }
@@ -481,17 +487,33 @@ class XSearchEnhancer {
         return new Promise((resolve) => {
             if (chrome.runtime && chrome.runtime.id) {
                 const keysToGet = [
-                  ADVANCED_FILTER_STORAGE_KEYS.EXPANDED,
-                  ...Object.values(ADVANCED_FILTER_STORAGE_KEYS).filter(k => k !== ADVANCED_FILTER_STORAGE_KEYS.EXPANDED) // 获取所有筛选条件的值
+                    ADVANCED_FILTER_STORAGE_KEYS.EXPANDED,
+                    // Add SPECIAL_USERS_EXPANDED to keys to load
+                    ADVANCED_FILTER_STORAGE_KEYS.SPECIAL_USERS_EXPANDED,
+                    ...Object.values(ADVANCED_FILTER_STORAGE_KEYS).filter(
+                        k => k !== ADVANCED_FILTER_STORAGE_KEYS.EXPANDED &&
+                             k !== ADVANCED_FILTER_STORAGE_KEYS.SPECIAL_USERS_EXPANDED // 获取所有筛选条件的值
+                    ) 
+                    // More robust way to get all keys: Object.values(ADVANCED_FILTER_STORAGE_KEYS)
+                    // However, the above ensures EXPANDED and SPECIAL_USERS_EXPANDED are explicitly listed
+                    // A simpler way if all keys in ADVANCED_FILTER_STORAGE_KEYS are simple values:
+                    // const keysToGet = Object.values(ADVANCED_FILTER_STORAGE_KEYS);
                 ];
-                chrome.storage.local.get(keysToGet, (result) => {
+
+                // A cleaner way to get all keys if ADVANCED_FILTER_STORAGE_KEYS only contains string values for keys
+                const allStorageKeys = Object.values(ADVANCED_FILTER_STORAGE_KEYS);
+
+                chrome.storage.local.get(allStorageKeys, (result) => {
                     if (chrome.runtime.lastError) {
                         console.warn('XSE: Error loading advanced filter states:', chrome.runtime.lastError.message);
                         this.advancedFilterValues = this._getDefaultAdvancedFilterValues(); // 出错时使用默认值
                         this.isAdvancedFiltersExpanded = false; // 默认不展开
+                        this.isSpecialUsersListExpanded = false;
                     } else {
                         this.isAdvancedFiltersExpanded = !!result[ADVANCED_FILTER_STORAGE_KEYS.EXPANDED];
-                        // 遍历 this.advancedFilterValues 的所有预设键
+                        this.isSpecialUsersListExpanded = !!result[ADVANCED_FILTER_STORAGE_KEYS.SPECIAL_USERS_EXPANDED];
+                        
+                        // Load other filter values
                         for (const key in this.advancedFilterValues) {
                           // 使用 Object.prototype.hasOwnProperty.call 确保只处理 result 对象自身的属性，
                           // 而不是原型链上的，这是一种更安全的做法。
@@ -521,7 +543,7 @@ class XSearchEnhancer {
         });
     }
 
-    async _saveAdvancedFilterStates() {
+    async _savePersistentUiStates() {
       if (!this.panel) { // 如果面板DOM不存在，则不执行任何操作
           // console.warn("XSE: Panel not found, cannot save advanced filter states.");
           return Promise.resolve(); // 返回一个已解决的Promise，避免调用方出错
@@ -556,6 +578,7 @@ class XSearchEnhancer {
               const statesToSave = {
                   // 保存高级筛选区域的展开/收起状态
                   [ADVANCED_FILTER_STORAGE_KEYS.EXPANDED]: this.isAdvancedFiltersExpanded,
+                  [ADVANCED_FILTER_STORAGE_KEYS.SPECIAL_USERS_EXPANDED]: this.isSpecialUsersListExpanded,
                   // 保存所有筛选条件的值
                   // 使用展开运算符 (...) 来包含 this.advancedFilterValues 中的所有键值对
                   ...this.advancedFilterValues 
@@ -630,8 +653,6 @@ class XSearchEnhancer {
 
         // 加载完值后，立即更新 from:user 区域的显隐
         this.updateAdvancedFiltersUI();
-        // 加载完值后，也进行一次日期校验
-        this._validateDates();
     }
 
     async loadSpecialUsers() {
@@ -1039,14 +1060,17 @@ class XSearchEnhancer {
       const advancedFiltersArea = this._renderAdvancedFiltersArea();
       panelScrollableContent.appendChild(advancedFiltersArea);
 
-      // 5. 特别关注区域
+      // 5 特别关注区域
       const specialUsersMainContainer = document.createElement('div');
       specialUsersMainContainer.style.marginBottom = '28px'; // 保持原有的间距控制
       const specialUsersHeader = document.createElement('h3');
-      specialUsersHeader.innerHTML = `特别关注 <div class="${DOM_SELECTORS.PANEL.USER_COUNT_BADGE.substring(1)}">${this.specialUsers.length}</div>`; // Chinese: 特别关注
+      // --- MODIFICATION START: Change user count badge to a button for toggling list expansion ---
+      // 使用 DOM_SELECTORS.PANEL.USER_COUNT_BADGE 作为类名，但元素是 button，并添加 ID
+      specialUsersHeader.innerHTML = `特别关注 <button id="xse-special-users-toggle-btn" class="${DOM_SELECTORS.PANEL.USER_COUNT_BADGE.substring(1)}">${this.specialUsers.length}</button>`;
+      // --- MODIFICATION END ---
       specialUsersMainContainer.appendChild(specialUsersHeader);
       const specialUsersListContainer = document.createElement('div');
-      specialUsersListContainer.id = DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1);
+      specialUsersListContainer.id = DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER.substring(1); // e.g., #special-users-list
       specialUsersMainContainer.appendChild(specialUsersListContainer);
       panelScrollableContent.appendChild(specialUsersMainContainer);
 
@@ -1117,7 +1141,7 @@ class XSearchEnhancer {
               toggleAdvancedBtn.setAttribute('aria-expanded', String(this.isAdvancedFiltersExpanded));
               
               // 最重要的一步：保存包括新的展开状态在内的所有高级筛选设置
-              this._saveAdvancedFilterStates(); 
+              this._savePersistentUiStates(); 
             }
         });
       }
@@ -1127,7 +1151,7 @@ class XSearchEnhancer {
           clearFiltersBtn.addEventListener('click', () => {
               this.advancedFilterValues = this._getDefaultAdvancedFilterValues(); // Resets all filter values
               this._applyAdvancedFilterStatesToUI(); // Applies these defaults back to the UI elements
-              this._saveAdvancedFilterStates(); // Saves the reset state
+              this._savePersistentUiStates(); // Saves the reset state
           });
       }
 
@@ -1140,7 +1164,7 @@ class XSearchEnhancer {
               const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
               if(fromUserContainer && !fromUserContainer.classList.contains('xse-hidden')) { // Only save if visible
                 this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER] = fromUserInput.value;
-                this._saveAdvancedFilterStates();
+                this._savePersistentUiStates();
               }
           });
       }
@@ -1150,105 +1174,140 @@ class XSearchEnhancer {
       if (langSelect) {
           langSelect.addEventListener('change', () => {
               this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.LANG_CODE] = langSelect.value;
-              this._saveAdvancedFilterStates();
+              this._savePersistentUiStates();
           });
       }
-      // REMOVE event listeners for date inputs
       // --- MODIFICATION END ---
-    }
 
-    // --- 新增：日期校验方法 ---
-    _validateDates() {
-        if (!this.panel) return;
-        const sinceDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.SINCE_DATE_INPUT_ID}`);
-        const untilDateInput = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.UNTIL_DATE_INPUT_ID}`);
-        const errorMessageElement = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.DATE_ERROR_MESSAGE_ID}`);
-
-        if (!sinceDateInput || !untilDateInput || !errorMessageElement) return false;
-
-        const sinceDate = sinceDateInput.value;
-        const untilDate = untilDateInput.value;
-
-        // errorMessageElement.style.display = 'none'; // 默认隐藏错误信息
-        errorMessageElement.classList.add('xse-hidden');
-        let isValid = true;
-
-        if (sinceDate && untilDate) {
-            const dSince = new Date(sinceDate);
-            const dUntil = new Date(untilDate);
-            if (dSince > dUntil) {
-                errorMessageElement.textContent = '开始日期不能晚于结束日期。';
-                // errorMessageElement.style.display = 'block';
-                errorMessageElement.classList.remove('xse-hidden');
-                isValid = false;
-            }
-        }
-        return isValid;
+      // --- MODIFICATION START: Add event listener for special users list toggle button ---
+      const toggleSpecialUsersBtn = this.panel.querySelector('#xse-special-users-toggle-btn');
+      if (toggleSpecialUsersBtn) {
+          toggleSpecialUsersBtn.addEventListener('click', () => {
+              this.isSpecialUsersListExpanded = !this.isSpecialUsersListExpanded;
+              this.updatePanelUserList(); // Re-render the list with the new expansion state
+              this._savePersistentUiStates(); // Persist the new expansion state
+          });
+      }
+      // --- MODIFICATION END ---
     }
 
     updatePanelUserList() {
       if (!this.panel) return;
 
       const userListContainer = this.panel.querySelector(DOM_SELECTORS.PANEL.SPECIAL_USERS_LIST_CONTAINER);
-      if (!userListContainer) return;
-
-      const counter = this.panel.querySelector(DOM_SELECTORS.PANEL.USER_COUNT_BADGE);
-      if (counter) {
-        counter.textContent = this.specialUsers.length;
+      if (!userListContainer) {
+        // console.warn("XSE: Special users list container not found in updatePanelUserList.");
+        return;
       }
+
+      const toggleBtn = this.panel.querySelector('#xse-special-users-toggle-btn'); 
 
       if (this.specialUsers.length === 0) {
         userListContainer.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">⭐</div>
-            <div>暂无特别关注用户</div>
+            <div>暂无特别关注用户</div> 
             <div class="empty-state-subtitle">在用户主页点击 ☆ 添加用户</div>
           </div>
         `;
+        if (toggleBtn) {
+            toggleBtn.textContent = '0';
+            toggleBtn.disabled = true; 
+            toggleBtn.classList.remove('xse-toggle-active'); 
+        }
+        if (typeof this.updateAdvancedFiltersUI === 'function') {
+            this.updateAdvancedFiltersUI();
+        }
         return;
       }
 
-      userListContainer.innerHTML = this.specialUsers.map(user => `
-        <div class="special-user-item" data-username="${user.username}">
-          <div class="user-info">
-            <div class="user-indicator"></div>
-            <div class="user-details">
-              <div class="user-display-name">${user.displayName || user.username}</div>
-              <div class="user-username">@${user.username}</div>
+      let usersToDisplay = this.specialUsers;
+      let canToggle = false;
+
+      // Logic to determine usersToDisplay and toggleBtn text now uses this.isSpecialUsersListExpanded
+      // which should be correctly loaded from storage.
+      if (this.specialUsers.length > this.initialSpecialUsersToShow) {
+        canToggle = true;
+        if (!this.isSpecialUsersListExpanded) { // Check the persisted state
+          usersToDisplay = this.specialUsers.slice(0, this.initialSpecialUsersToShow);
+        }
+      }
+
+      // Adjust HTML template to show displayName and @username on separate lines ---
+      userListContainer.innerHTML = usersToDisplay.map(user => {
+        // 确保 displayName 有值，如果为空则直接使用 username 作为第一行，避免显示 "undefined" 或空行
+        const displayNameToShow = user.displayName || user.username;
+        // 如果 displayName 本身就包含了 "@" + username (虽然理论上不应该，但做个预防)，则只显示 displayName
+        // 但 displayName 不应包含 username，所以这里主要处理 displayName 为空的情况。
+        
+        return `
+          <div class="special-user-item" data-username="${user.username}">
+            <div class="user-info">
+              <div class="user-indicator"></div>
+              <div class="user-details">
+                <div class="user-display-name">${displayNameToShow}</div>
+                <div class="user-username">@${user.username}</div> 
+              </div>
             </div>
+            <button class="remove-user" data-username="${user.username}" title="移除用户">×</button>
           </div>
-          <button class="remove-user" data-username="${user.username}" title="移除用户">×</button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
-      userListContainer.querySelectorAll(DOM_SELECTORS.PANEL.SPECIAL_USER_ITEM).forEach(item => {
-        item.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('remove-user')) {
-            const username = item.dataset.username;
-            window.open(`https://x.com/${username}`, '_blank');
+      if (toggleBtn) {
+        toggleBtn.disabled = false;
+        if (canToggle) {
+          if (this.isSpecialUsersListExpanded) {
+            toggleBtn.textContent = `收起 (${this.specialUsers.length})`;
+            toggleBtn.classList.add('xse-toggle-active');
+          } else {
+            toggleBtn.textContent = `显示其余 ${this.specialUsers.length - usersToDisplay.length} 条 (${this.specialUsers.length})`;
+            toggleBtn.classList.remove('xse-toggle-active');
           }
-        });
-      });
+          toggleBtn.style.cursor = 'pointer';
+        } else {
+          toggleBtn.textContent = String(this.specialUsers.length);
+          toggleBtn.style.cursor = 'default';
+          toggleBtn.classList.remove('xse-toggle-active');
+        }
+      }
 
-      userListContainer.querySelectorAll(DOM_SELECTORS.PANEL.REMOVE_USER_BUTTON).forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const username = e.target.dataset.username;
-          this.specialUsers = this.specialUsers.filter(user => user.username !== username);
-          await this.saveSpecialUsers();
-          // 递归调用以刷新列表和计数器
-          this.updatePanelUserList();
+      userListContainer.querySelectorAll('.special-user-item').forEach(item => {
+        const userInfoArea = item.querySelector('.user-info');
+        if (userInfoArea) {
+            userInfoArea.addEventListener('click', (e) => {
+                if (e.target.closest('.remove-user')) {
+                    return;
+                }
+                const username = item.dataset.username;
+                if (username) {
+                    window.open(`https://x.com/${username}`, '_blank');
+                }
+            });
+        }
+        
+        const removeButton = item.querySelector('.remove-user');
+        if (removeButton) {
+            removeButton.addEventListener('click', async (e) => {
+              e.stopPropagation(); 
+              const usernameToRemove = e.target.dataset.username;
+              this.specialUsers = this.specialUsers.filter(user => user.username !== usernameToRemove);
+              await this.saveSpecialUsers(); // This saves the user list
+              this.updatePanelUserList(); // This re-renders the list and also updates the toggle button text
 
-          // TODO: updateAdvancedFiltersUI 会在 updatePanelUserList 结束时被调用
+              // Note: this._savePersistentUiStates() which saves UI states like SPECIAL_USERS_EXPANDED
+              // is NOT called here directly, because removing a user doesn't change the *expansion preference*.
+              // The expansion preference is only changed by clicking the toggle button itself.
 
-          if (this.currentUsername === username) {
-            const profileButton = document.querySelector('.x-search-enhancer-follow-btn');
-            if (profileButton) {
-              profileButton.innerHTML = '☆';
-              profileButton.title = '添加到特别关注';
-            }
-          }
-        });
+              if (this.currentUsername === usernameToRemove) {
+                const profileButton = document.querySelector('.x-search-enhancer-follow-btn');
+                if (profileButton) {
+                  profileButton.innerHTML = '☆';
+                  profileButton.title = '添加到特别关注';
+                }
+              }
+            });
+        }
       });
 
       if (typeof this.updateAdvancedFiltersUI === 'function') {
