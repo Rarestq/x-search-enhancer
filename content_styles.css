@@ -543,6 +543,24 @@
     }
   }
 
+/* ---------------------------------- */
+/* XSE 输入框提示占位符样式 (XSE Input Placeholder Prompt Styles) */
+/* ---------------------------------- */
+#x-search-enhancer-panel #search-keywords.xse-input-placeholder-prompt::placeholder {
+  color: var(--secondary-purple) !important; /* 使用一个与主题相关的醒目颜色 */
+  opacity: 0.9 !important; /* 确保不透明度足够高 */
+  font-style: bold; /* 使用斜体增加区分度 */
+  /* 也可以考虑添加一个非常细微的文本阴影或过渡效果，但需谨慎，避免过度干扰 */
+  transition: color 0.3s ease-in-out;  /* 如果希望颜色变化有过渡 */
+}
+
+/* 确保在深色模式下也有良好对比度 */
+@media (prefers-color-scheme: dark) {
+  #x-search-enhancer-panel #search-keywords.xse-input-placeholder-prompt::placeholder {
+    color: #CFBFF7 !important; /* 深色模式下调整颜色以保证可见性 */
+  }
+}
+
   /* ---------------------------------- */
 /* XSE 高级筛选区域样式 (XSE Advanced Filters Styles) */
 /* ---------------------------------- */

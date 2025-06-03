@@ -347,6 +347,21 @@ class XSearchEnhancer {
         return area;
     }
 
+    // --- 20250603 新增：判断高级筛选条件是否都为空/默认值 ---
+    _areAdvancedFiltersEffectivelyEmpty() {
+      const defaults = this._getDefaultAdvancedFilterValues();
+      for (const key in this.advancedFilterValues) {
+          // 确保比较的是实际的筛选条件值，而不是其他可能的内部状态
+          if (defaults.hasOwnProperty(key)) {
+              if (this.advancedFilterValues[key] !== defaults[key]) {
+                  // 只要有一个筛选条件不是默认值，就认为高级筛选不是空的
+                  return false;
+              }
+          }
+      }
+      return true; // 所有高级筛选条件都处于默认值
+  }
+
     /**
      * 设置并持久化面板的打开/关闭状态。
      * @param {boolean} isOpen - 面板是否应该打开。
@@ -950,7 +965,7 @@ class XSearchEnhancer {
       const searchKeywordsInput = document.createElement('input');
       searchKeywordsInput.type = 'text';
       searchKeywordsInput.id = DOM_SELECTORS.PANEL.SEARCH_INPUT.substring(1);
-      searchKeywordsInput.placeholder = '搜索关键词...';
+      searchKeywordsInput.placeholder = '请输入你想搜索的内容...';
       searchInputContainer.appendChild(searchKeywordsInput);
       searchInputMainContainer.appendChild(searchInputContainer);
       panelContent.appendChild(searchInputMainContainer);
@@ -1215,20 +1230,49 @@ class XSearchEnhancer {
       if (!keywordsInput) return;
 
       const keywords = keywordsInput.value.trim();
+      const placeholderPromptClass = 'xse-input-placeholder-prompt'; // 定义CSS类名
 
-      if (!keywords) {
-        keywordsInput.classList.add('error-state');
-        setTimeout(() => {
-          keywordsInput.classList.remove('error-state');
-        }, 500);
-        return;
+      // 检查用户搜索意图：如果没有关键词，高级筛选也为空，但有特别关注用户，则提示用户
+      if (!keywords && this._areAdvancedFiltersEffectivelyEmpty() && this.specialUsers.length > 0) {
+        const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
+        const originalButtonText = '开始搜索'; 
+        
+        if (searchBtn && !searchBtn.dataset.isPrompting) { 
+            searchBtn.dataset.isPrompting = 'true';
+            const promptText = '请输入关键词或筛选';
+            searchBtn.textContent = promptText;
+            searchBtn.disabled = true;
+
+            const originalPlaceholder = keywordsInput.placeholder;
+            keywordsInput.placeholder = '请输入关键词或设置高级筛选';
+            keywordsInput.classList.add(placeholderPromptClass); // 添加醒目样式类
+            keywordsInput.focus(); 
+
+            setTimeout(() => {
+                if (this.panel && searchBtn.dataset.isPrompting === 'true') { 
+                    searchBtn.textContent = originalButtonText;
+                    searchBtn.disabled = false;
+                    delete searchBtn.dataset.isPrompting;
+                    if (keywordsInput.placeholder === '请输入关键词或设置高级筛选') {
+                        keywordsInput.placeholder = originalPlaceholder;
+                        keywordsInput.classList.remove(placeholderPromptClass); // 移除醒目样式类
+                    }
+                }
+            }, 3000); 
+        }
+        console.log("XSE: Search aborted. No keywords or advanced filters, but special users are present. Prompting user.");
+        return; 
       }
 
       let queryParts = [];
-      // 1. 添加关键词
-      queryParts.push(keywords);
+
+      // 1. 添加关键词 (如果存在)
+      if (keywords) {
+        queryParts.push(keywords);
+      }
 
       // 2. 添加“特别关注”用户 (如果激活)
+      // 或者，如果“特别关注”未激活，则使用高级筛选中的 from:user
       if (this.specialUsers.length > 0) {
         const usernames = this.specialUsers.map(user => `from:${user.username}`).join(' OR ');
         queryParts.push(`(${usernames})`);
@@ -1236,8 +1280,8 @@ class XSearchEnhancer {
         // 仅当“特别关注”未激活且 from:user 可见且有值时，才使用高级筛选的 from:user
         const fromUserContainer = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.FROM_USER_CONTAINER_ID}`);
         const fromUserInputVal = this.advancedFilterValues[ADVANCED_FILTER_STORAGE_KEYS.FROM_USER];
-        if (fromUserContainer && fromUserContainer.style.display !== 'none' && fromUserInputVal) {
-            queryParts.push(`from:${fromUserInputVal}`);
+        if (fromUserContainer && !fromUserContainer.classList.contains('xse-hidden') && fromUserInputVal) {
+          queryParts.push(`from:${fromUserInputVal}`);
         }
       }
 
@@ -1269,29 +1313,47 @@ class XSearchEnhancer {
 
       const finalSearchQuery = queryParts.join(' ').trim();
 
+      // 如果没有任何有效的搜索条件（关键词、特别关注、高级筛选均为空）
       if (!finalSearchQuery) {
-        if(keywordsInput) keywordsInput.placeholder = "请输入关键词或使用高级筛选";
-        console.log("XSE: No search query to execute.");
-        // 可以在这里给用户一些提示，比如面板内显示消息
         const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
-        if (searchBtn) {
-            searchBtn.textContent = '请输入搜索内容';
-            setTimeout(() => {
-                if(this.panel) searchBtn.textContent = '开始搜索';
-            }, 2000);
+        if (searchBtn && !searchBtn.dataset.isPrompting) {
+          searchBtn.dataset.isPrompting = 'true';
+          searchBtn.textContent = '请输入搜索内容';
+          searchBtn.disabled = true;
+          const originalPlaceholder = keywordsInput.placeholder;
+          keywordsInput.placeholder = '请输入搜索内容或设置高级筛选';
+          keywordsInput.classList.add(placeholderPromptClass); // 添加醒目样式类
+          keywordsInput.focus();
+          setTimeout(() => {
+              if (this.panel && searchBtn.dataset.isPrompting === 'true') {
+                  searchBtn.textContent = '开始搜索';
+                  searchBtn.disabled = false;
+                  delete searchBtn.dataset.isPrompting;
+                  if(keywordsInput.placeholder === '请输入搜索内容或设置高级筛选') {
+                      keywordsInput.placeholder = originalPlaceholder; // 恢复原始 placeholder
+                      keywordsInput.classList.remove(placeholderPromptClass); // 移除醒目样式类
+                  }
+              }
+          }, 2000);
         }
+        console.log("XSE: No search query to execute (all fields empty).");
         return;
       }
 
       // 日期校验
       if (!this._validateDates()) {
         console.log("XSE: Invalid date range. Search aborted.");
-        // 可以在面板中给出更明显的提示
         const searchBtn = this.panel.querySelector(`#${DOM_SELECTORS.PANEL.EXECUTE_SEARCH_BUTTON.substring(1)}`);
-         if (searchBtn) {
+         if (searchBtn && !searchBtn.dataset.isPrompting) {
+            searchBtn.dataset.isPrompting = 'true';
             searchBtn.textContent = '日期范围无效';
+            searchBtn.disabled = true;
             setTimeout(() => {
-               if(this.panel) searchBtn.textContent = '开始搜索';
+               if(this.panel && searchBtn.dataset.isPrompting === 'true') {
+                  searchBtn.textContent = '开始搜索';
+                  searchBtn.disabled = false;
+                  delete searchBtn.dataset.isPrompting;
+               }
             }, 2000);
         }
         return;
@@ -1305,8 +1367,11 @@ class XSearchEnhancer {
       if (searchBtn) {
           searchBtn.innerHTML = '搜索中...';
           searchBtn.style.opacity = '0.7';
+          searchBtn.disabled = true; // 禁用以防重复点击
       }
 
+      // 实际跳转前，确保按钮状态在跳转失败或延迟的情况下能恢复
+      // 但由于是页面跳转，当前脚本实例会销毁，所以主要靠新页面加载时重置
       setTimeout(() => {
         window.location.href = searchUrl;
       }, 300);
