@@ -1,6 +1,6 @@
 # X 搜索增强浏览器插件 (X Search Enhancer)
 
-[![版本](https://img.shields.io/badge/version-1.2.0-blue)](docs/CHANGELOG.md)
+[![版本](https://img.shields.io/badge/version-1.3.0-blue)](docs/CHANGELOG.md)
 [![许可证](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE.md)
 [![贡献指南](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING_GUIDE.md)
 
