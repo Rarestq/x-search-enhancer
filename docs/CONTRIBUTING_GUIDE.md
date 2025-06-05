@@ -12,70 +12,86 @@
 
 - **现代浏览器**: 最新稳定版的 Google Chrome, Microsoft Edge, 或 Mozilla Firefox (用于测试)。
 
-- **代码编辑器**: 例如 VS Code (推荐), Sublime Text, Atom 等。
+- **代码编辑器**:
 
-### 初始步骤
+  - 例如 VS Code (推荐), Sublime Text, Atom 等。
 
-1.  **Fork 项目** (如果您计划通过 Pull Request 贡献代码):
+  - 建议安装 Prettier, ESLint, Stylelint 等编辑器插件，以便在编码时获得即时反馈和自动格式化。
 
-    - 访问项目在代码托管平台（如 GitHub）上的主仓库。
+### 初始步骤初始步骤 (获取代码并安装依赖)
 
-    - 点击 "Fork" 按钮，将项目复制到您自己的账户下。
+1.  **Fork 项目** (如果您计划通过 Pull Request 贡献代码，这是推荐方式):
 
-2.  **Clone 您的 Fork (或主仓库)**:
+    - 访问项目在 GitHub 上的主仓库：[https://github.com/rarestq/x-search-enhancer](https://github.com/rarestq/x-search-enhancer)
 
-    ```bash
-    git clone [您Fork的仓库地址 或 主仓库地址] x-search-enhancer
-    cd x-search-enhancer
-    ```
+    - 点击页面右上角的 "Fork" 按钮，将项目复制到您自己的 GitHub 账户下。
 
-3.  **安装依赖**:
-    在项目根目录下运行以下命令来安装所有开发所需的依赖包：
-    ```bash
-    npm install
-    ```
+2.  **Clone 您的 Fork (或直接 Clone 主仓库)**:
 
-### 开发脚本
+    - 将仓库克隆到您的本地计算机。如果您 Fork 了项目，请使用您 Fork 的仓库地址：
 
-项目 `package.json` 文件中定义了一些有用的 npm 脚本：
+      ```bash
+      git clone https://github.com/YOUR_USERNAME/x-search-enhancer.git
+      # 将 YOUR_USERNAME 替换为您的 GitHub 用户名
+      cd x-search-enhancer
+      ```
 
-- **构建插件 (生产模式)**: 将源代码打包到 `dist/` 目录，用于最终发布。
+    - 如果您只是想在本地运行或测试，也可以直接克隆主仓库：
+      ```bash
+      git clone https://github.com/rarestq/x-search-enhancer.git
+      cd x-search-enhancer
+      ```
 
-  ```bash
-  npm run build
-  ```
+3.  **安装项目依赖**:
+    - 在克隆下来的项目根目录下，运行以下命令来安装所有开发所需的依赖包 (如 Webpack, ESLint, Prettier 等)：
+      ```bash
+      npm install
+      ```
+    - 如果项目中配置了 Husky (Git Hooks 工具)，此步骤通常也会自动运行 `husky install` (通过 `package.json` 中的 `prepare` 脚本)。
 
-- **构建插件 (开发模式)**: 启动 Webpack 的 watch 模式，当源代码文件发生变化时会自动重新构建。
+### 开发脚本 (定义于 `package.json`)
 
-  ```bash
-  npm run dev
-  ```
+项目使用 npm 脚本来简化常见的开发任务：
 
-- **代码格式化**: 使用 Prettier 自动格式化项目中的 JS, CSS, MD, JSON 文件。
+- **启动开发模式 `npm run dev`**:
 
-  ```bash
-  npm run format
-  ```
+  - 此命令会使用 Webpack 以开发模式启动构建，并进入 watch 模式。
 
-- **代码检查与自动修复**: 使用 ESLint (针对 JavaScript) 和 Stylelint (针对 CSS) 检查代码规范并尝试自动修复问题。
-  ```bash
-  npm run lint
-  # 或者分别运行:
-  # npm run lint:js
-  # npm run lint:css
-  ```
+  - 当您修改 `src/` 目录下的源文件时，Webpack 会自动重新构建插件，并将更新后的文件输出到 `dist/` 目录。
 
-在进行代码更改后，建议运行格式化和代码检查脚本，以确保代码风格一致并符合项目规范。如果配置了 Git Hooks (Husky + lint-staged)，这些检查会在提交前自动执行。
+  - 这是进行代码开发和即时测试时最常用的命令。
 
-### 加载开发中的插件
+- **构建生产版本 `npm run build`**:
 
-1.  运行 `npm run dev` (或 `npm run build` 如果您不需要自动重新构建)。
+  - 此命令会使用 Webpack 以生产模式构建插件。
 
-2.  在您的浏览器中加载已解压的扩展程序时，**选择项目根目录下的 `dist/` 文件夹**。
+  - 它会对 JavaScript 代码进行优化和压缩，并将最终用于发布的插件文件输出到 `dist/` 目录。
 
-3.  详细加载步骤请参考 [安装指南](INSTALLATION_GUIDE.md)。
+- **代码格式化 `npm run format`**:
+
+  - 此命令会使用 Prettier 自动格式化项目中的 JavaScript (`.js`)、CSS (`.css`)、Markdown (`.md`) 和 JSON (`.json`) 文件，以确保代码风格的统一。
+
+- **代码检查 `npm run lint`**:
+
+  - 此命令会同时运行 ESLint (针对 JavaScript) 和 Stylelint (针对 CSS) 来检查代码是否符合项目配置的规范，并尝试自动修复一些简单的问题。
+
+  - 您也可以单独运行 JavaScript 或 CSS 的检查：
+
+    - `npm run lint:js`
+
+    - `npm run lint:css`
+
+### 在开发过程中加载插件
+
+1.  首先，确保您已经至少运行过一次 `npm run build` 或正在运行 `npm run dev`，以便 `dist/` 目录中包含最新的插件文件。
+
+2.  在您的浏览器中加载已解压的扩展程序时，请务必选择项目根目录下的 **`dist/` 文件夹**。
+
+3.  详细的浏览器加载步骤，请参考项目的 [安装指南](INSTALLATION_GUIDE.md)。
 
 ## 💡 如何贡献
+
+我们欢迎各种形式的贡献，包括但不限于：
 
 ### 1. 报告 Bug (Reporting Bugs)
 

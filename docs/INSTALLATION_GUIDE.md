@@ -2,25 +2,39 @@
 
 您可以按照以下步骤在主流的 Chromium 内核浏览器 (如 Google Chrome, Microsoft Edge) 和 Firefox 上安装 X 搜索增强插件。
 
-## 先决条件
+## 一、准备工作 (所有浏览器通用)
 
-- 确保您已安装 [Node.js](https://nodejs.org/) (推荐 LTS 版本) 和 npm (通常随 Node.js 一同安装)。
+1.  **安装 Node.js 和 npm**:
 
-- 从代码仓库 (例如 GitHub) 克隆或下载本插件的源码。
+    - 确保您的电脑上已安装 [Node.js](https://nodejs.org/) (推荐使用最新的 LTS 版本)。npm (Node Package Manager) 通常会随 Node.js 一同安装。您可以在命令行中运行 `node -v` 和 `npm -v` 来检查是否已安装。
 
-## 构建插件 (必需步骤)
+2.  **获取插件源码**:
 
-在安装插件之前，您需要先构建它。在您的终端中，导航到插件的根目录并执行以下命令：
+    - 通过 Git 克隆本项目的代码仓库到您的本地计算机：
 
-1.  **安装依赖**:
-    ```bash
-    npm install
-    ```
-2.  **构建插件**:
-    ```bash
-    npm run build
-    ```
-    此命令会将所有必要的插件文件（包括处理过的 JavaScript、CSS 和其他静态资源）输出到项目根目录下的 `dist/` 文件夹中。**后续加载插件时，您将使用此 `dist/` 文件夹。**
+      ```bash
+      git clone https://github.com/rarestq/x-search-enhancer.git
+      cd x-search-enhancer
+      ```
+
+    - 或者，您可以从项目的发布页面下载源码的 `.zip` 压缩包并解压到本地文件夹。
+
+3.  **安装项目依赖**:
+
+    - 在插件的根目录下（即 `x-search-enhancer` 文件夹内），打开您的命令行工具，然后运行以下命令来安装所有必要的开发依赖项：
+      ```bash
+      npm install
+      ```
+
+4.  **构建插件**:
+
+    - 安装完依赖后，运行以下命令来构建插件。此命令会处理 JavaScript、CSS 等文件，并将最终可用于浏览器加载的插件文件输出到项目根目录下的 `dist/` 文件夹中。
+
+      ```bash
+      npm run build
+      ```
+
+    - **重要提示**: 后续在浏览器中加载插件时，您将始终选择这个 `dist/` 文件夹或其中的文件。
 
 ## Chrome / Edge (推荐)
 

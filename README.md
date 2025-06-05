@@ -53,15 +53,33 @@
 
 ## 🔧 开发
 
-- **构建插件 (开发模式)**: `npm run dev` (会启动 Webpack 的 watch 模式，自动重新构建)
+- **启动开发模式 (自动重新构建)**:
 
-- **构建插件 (生产模式)**: `npm run build`
+  ```bash
+  npm run dev
+  ```
 
-- **代码格式化**: `npm run format`
+- **构建生产版本**:
 
-- **代码检查**: `npm run lint` (或 `npm run lint:js`, `npm run lint:css`)
+  ```bash
+  npm run build
+  ```
 
-更多开发相关信息请查阅 [贡献指南](docs/CONTRIBUTING_GUIDE.md)。
+- **代码格式化 (Prettier)**:
+
+  ```bash
+  npm run format
+  ```
+
+- **代码检查 (ESLint & Stylelint)**:
+  ```bash
+  npm run lint
+  # 或者分别执行:
+  # npm run lint:js
+  # npm run lint:css
+  ```
+
+在开发过程中，加载已解压的扩展程序时请选择 `dist/` 目录。更多开发相关信息请查阅 [贡献指南](docs/CONTRIBUTING_GUIDE.md)。
 
 ## 📚 详细文档
 
@@ -97,9 +115,15 @@
 
 - WebExtensions API (Manifest V3)
 
-- Webpack (用于构建)
+- Webpack (模块打包与构建)
 
-- ESLint, Prettier, Stylelint (用于代码规范和质量)
+- ESLint (JavaScript 代码检查)
+
+- Stylelint (CSS 代码检查)
+
+- Prettier (代码格式化)
+
+- Husky & lint-staged (Git Hooks，用于提交前检查)
 
 ## 💬 反馈与支持
 
