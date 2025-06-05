@@ -1,0 +1,51 @@
+# 构建产物和打包文件
+dist/
+build/
+public/
+out/
+pkg/
+
+# 依赖文件夹
+node_modules/
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# 编辑器和IDE的配置文件
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# 临时文件和缓存
+.temp/
+.cache/
+*.tmp
+
+# 压缩/混淆过的文件 (通常不应 lint)
+*.min.js
+*.min.css
+
+# 特定工具或库生成的文件 (按需添加)
+# .parcel-cache/
+# .next/
+# .nuxt/
+
+# 环境变量文件 (如果包含敏感信息或不需要lint)
+# .env
+# .env.*
+# !.env.example # 如果你想 lint 示例env文件
+
+# 类型声明生成目录 (如果与源码分开)
+# types/
+# generated/
